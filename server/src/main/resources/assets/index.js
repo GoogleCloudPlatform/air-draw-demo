@@ -1,12 +1,25 @@
-const evtSource = new EventSource("/events");
+var evtSource;
 
-evtSource.onmessage = function(e) {
-  const data = JSON.parse(e.data);
+function setup() {
+  evtSource = new EventSource("/events");
 
-  document.body.style.backgroundImage = "url('/img?path=" + data.first + "')";
+  evtSource.onmessage = function(e) {
+    const data = JSON.parse(e.data);
 
-  document.body.innerText = data.second.reduce((acc, o) => {
-    return acc + "\n" + o.description + " = " + Math.round(o.score * 100) + "%";
-  }, "");
+    document.body.style.backgroundImage = "url('/img?path=" + data.first + "')";
 
-};
+    document.body.innerText = data.second.reduce((acc, o) => {
+      return acc + "\n" + o.description + " = " + Math.round(o.score * 100) + "%";
+    }, "");
+
+  };
+
+  evtSource.onerror = () => {
+    evtSource.removeEventListener("message", onmessage);
+    evtSource.removeEventListener("error", onerror);
+    window.setTimeout(setup, 1000);
+  };
+
+}
+
+setup();
