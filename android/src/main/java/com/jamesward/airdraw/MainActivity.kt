@@ -74,7 +74,8 @@ class MainActivity: AppCompatActivity() {
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
                 val json = Json.stringify(Orientation.serializer().list, orientationSensor.readings.toList())
-                Fuel.post("http://192.168.86.117:8080/draw")
+                // todo: externalize config
+                Fuel.post("https://air-draw-5yonijgw4a-uc.a.run.app/draw")
                         .jsonBody(json)
                         .response { result ->
                             println(result)
