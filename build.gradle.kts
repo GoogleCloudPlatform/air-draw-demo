@@ -19,3 +19,7 @@ allprojects {
         google()
     }
 }
+
+tasks.create("stage") {
+    dependsOn("server:shadowJar")
+}

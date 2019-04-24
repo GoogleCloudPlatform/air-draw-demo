@@ -1,11 +1,12 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.allopen.gradle.AllOpenExtension
 
 plugins {
     application
     kotlin("jvm")
     kotlin("kapt")
-    id("com.google.cloud.tools.jib") version "1.0.2"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.3.30"
+    id("com.github.johnrengelman.shadow") version "4.0.4"
 }
 
 dependencies {
@@ -56,13 +57,6 @@ application {
     mainClassName = "com.jamesward.airdraw.WebAppKt"
 }
 
-jib {
-    val projectId: String? by project
-    val repoName: String? by project
-
-    to.image = "gcr.io/$projectId/$repoName"
-    container {
-        mainClass = application.mainClassName
-        ports = listOf("8080")
-    }
+tasks.withType<ShadowJar> {
+    mergeServiceFiles()
 }
