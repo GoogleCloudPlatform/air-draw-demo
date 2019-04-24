@@ -40,6 +40,7 @@ import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.WindowConstants
 import com.google.cloud.vision.v1.Feature.Type
+import io.micronaut.context.annotation.Requirements
 import io.micronaut.http.MediaType
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.types.files.SystemFile
@@ -102,22 +103,37 @@ class WebApp(private val airDraw: AirDraw) {
 }
 
 @Singleton
-@Requires(property = "google.application.credentials")
-class Vision {
+@Requires(beans = [MyImageAnnotatorClient::class])
+class Vision(private val myImageAnnotatorClient: MyImageAnnotatorClient) {
 
     fun label(f: File): AnnotateImageResponse? {
-        val imageAnnotatorClient = ImageAnnotatorClient.create()
-
         val data = Files.readAllBytes(f.toPath())
         val imgBytes = ByteString.copyFrom(data)
         val img = Image.newBuilder().setContent(imgBytes).build()
         val feature = Feature.newBuilder().setType(Type.LABEL_DETECTION).build()
         val request = AnnotateImageRequest.newBuilder().addFeatures(feature).setImage(img).build()
 
-        val response = imageAnnotatorClient.batchAnnotateImages(arrayListOf(request))
+        val response = myImageAnnotatorClient.imageAnnotatorClient.batchAnnotateImages(arrayListOf(request))
         return response.responsesList.firstOrNull()
     }
 
+}
+
+// used to provide either a GCP or local ImageAnnotatorClient
+interface MyImageAnnotatorClient {
+    val imageAnnotatorClient: ImageAnnotatorClient
+}
+
+@Singleton
+@Requires(property = "google.application.credentials")
+class LocalImageAnnotatorClient: MyImageAnnotatorClient {
+    override val imageAnnotatorClient = ImageAnnotatorClient.create()
+}
+
+@Singleton
+@Requires(env = [Environment.GOOGLE_COMPUTE])
+class GCPImageAnnotatorClient: MyImageAnnotatorClient {
+    override val imageAnnotatorClient = ImageAnnotatorClient.create()
 }
 
 interface AirDraw {
