@@ -46,8 +46,14 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.types.files.SystemFile
 import io.micronaut.http.sse.Event
 import io.reactivex.*
+import io.reactivex.Observable
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 import org.reactivestreams.Publisher
+import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 
@@ -68,7 +74,7 @@ fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
 @Controller
 class WebApp(private val airDraw: AirDraw) {
 
-    val publishSubject = PublishSubject.create<Pair<String, List<LabelAnnotation>>>()
+    val queue = ArrayBlockingQueue<Pair<String, List<LabelAnnotation>>>(256)
 
     @View("index")
     @Get("/")
@@ -80,7 +86,7 @@ class WebApp(private val airDraw: AirDraw) {
     fun draw(@Body readingsSingle: Single<List<Reading>>): Single<HttpResponse<String>> {
         return readingsSingle.map { readings ->
             airDraw.run(readings)?.let { (file, annotateImageResponse) ->
-                publishSubject.onNext(Pair(file.path, annotateImageResponse.labelAnnotationsList.toLabelAnnotation()))
+                queue.add(Pair(file.path, annotateImageResponse.labelAnnotationsList.toLabelAnnotation()))
             }
 
             HttpResponse.ok("")
@@ -96,8 +102,14 @@ class WebApp(private val airDraw: AirDraw) {
     }
 
     @Get("/events")
-    fun events(): Publisher<Event<Pair<String, List<LabelAnnotation>>>> {
-        return publishSubject.map { Event.of(it) }.toFlowable(BackpressureStrategy.BUFFER)
+    fun events(): Maybe<Pair<String, List<LabelAnnotation>>> {
+        val maybe = queue.firstOrNull()
+        return if (maybe != null) {
+            queue.remove(maybe)
+            Maybe.just(maybe)
+        } else {
+            Maybe.empty()
+        }
     }
 
 }
