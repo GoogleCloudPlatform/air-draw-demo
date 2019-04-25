@@ -2,6 +2,4 @@
     <string name="app_name">Air Draw</string>
     <string name="draw_button_on">Identify It!</string>
     <string name="draw_button_off">Draw!</string>
-    <string name="calibrate_button_on">Finish</string>
-    <string name="calibrate_button_off">Calibrate</string>
 </resources>
