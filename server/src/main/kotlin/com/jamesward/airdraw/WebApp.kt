@@ -233,7 +233,7 @@ object AirDrawSmileViewer {
             doubleArrayOf(minX, maxX)
         }
 
-        val linePlot = LinePlot(xy).setStroke(BasicStroke(10F, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND))
+        val linePlot = LinePlot(xy).setStroke(BasicStroke(20F, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND))
         val canvas = PlotCanvas(doubleArrayOf(xBounds[0], yBounds[0]), doubleArrayOf(xBounds[1], yBounds[1]))
         canvas.add(linePlot)
 
