@@ -24,6 +24,7 @@ dependencies {
     compile("ch.qos.logback:logback-classic:1.2.3")
 
     compile("com.google.cloud:google-cloud-vision:1.70.0")
+    compile("io.netty:netty-tcnative-boringssl-static:2.0.20.Final")
 
     runtime("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.7")
     runtime("org.thymeleaf:thymeleaf:3.0.11.RELEASE")
