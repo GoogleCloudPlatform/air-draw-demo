@@ -4,6 +4,7 @@
 
 TODO: Update Git Repo
 
+## Local Dev
 
 Run the server:
 ```
@@ -11,11 +12,6 @@ Run the server:
 ```
 
 Visit: [http://localhost:8080](http://localhost:8080)
-
-Deploy:
-
-[![Deploy with GCP](https://cr-button.jamesward.dev/image1.png)](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https://github.com/TODO.git&cloudshell_image=gcr.io/cr-demo-235923/cr-button)
-
 
 Run the client:
 
