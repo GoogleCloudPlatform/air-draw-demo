@@ -26,12 +26,10 @@ import com.google.pubsub.v1.*
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.env.Environment
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
-import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.jackson.serialize.JacksonObjectSerializer
 import io.micronaut.runtime.Micronaut
 import io.micronaut.views.View
@@ -44,10 +42,11 @@ import smile.plot.PlotCanvas
 import java.awt.BasicStroke
 import java.awt.Dimension
 import java.awt.GridLayout
-import java.io.File
-import java.nio.file.Files
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ArrayBlockingQueue
 import javax.annotation.PreDestroy
+import javax.imageio.ImageIO
 import javax.inject.Singleton
 import javax.swing.JFrame
 import javax.swing.JPanel
@@ -68,7 +67,7 @@ fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
     }
 }
 
-data class ImageResult(val path: String, val labelAnnotations: List<LabelAnnotation>)
+data class ImageResult(val image: ByteArray, val labelAnnotations: List<LabelAnnotation>)
 
 @Controller
 class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
@@ -82,19 +81,8 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
     @Post("/draw")
     fun draw(@Body readingsSingle: Single<List<Reading>>): Single<HttpResponse<String>> {
         return readingsSingle.map { readings ->
-            airDraw.run(readings)?.let { (file, annotateImageResponse) ->
-                bus.put(ImageResult(file.path, annotateImageResponse.labelAnnotationsList.toLabelAnnotation()))
-            }
-
+            airDraw.run(readings)?.let { bus.put(it) }
             HttpResponse.ok("")
-        }
-    }
-
-    // TODO: This is insecure
-    @Get("/img{?path}")
-    fun img(path: String?): StreamedFile? {
-        return path?.let {
-            StreamedFile(File(it).inputStream(), MediaType.IMAGE_PNG_TYPE)
         }
     }
 
@@ -113,9 +101,8 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
 @Requires(beans = [MyImageAnnotatorClient::class])
 class Vision(private val myImageAnnotatorClient: MyImageAnnotatorClient) {
 
-    fun label(f: File): AnnotateImageResponse? {
-        val data = Files.readAllBytes(f.toPath())
-        val imgBytes = ByteString.copyFrom(data)
+    fun label(bytes: ByteArray): AnnotateImageResponse? {
+        val imgBytes = ByteString.copyFrom(bytes)
         val img = Image.newBuilder().setContent(imgBytes).build()
         val feature = Feature.newBuilder().setType(Type.LABEL_DETECTION).build()
         val request = AnnotateImageRequest.newBuilder().addFeatures(feature).setImage(img).build()
@@ -239,15 +226,13 @@ class LocalBus: Bus {
 }
 
 interface AirDraw {
-    fun run(readings: List<Reading>): Pair<File, AnnotateImageResponse>?
+    fun run(readings: List<Reading>): ImageResult?
 }
 
 @Singleton
 @Requires(beans = [Vision::class])
 class CloudAirDraw(private val vision: Vision): AirDraw {
-    override fun run(readings: List<Reading>): Pair<File, AnnotateImageResponse>? {
-        val f = Files.createTempFile("airdraw", ".png").toFile()
-
+    override fun run(readings: List<Reading>): ImageResult? {
         val canvas = AirDrawSmileViewer.draw(readings)
 
         canvas.getAxis(0).isGridVisible = false
@@ -263,10 +248,17 @@ class CloudAirDraw(private val vision: Vision): AirDraw {
         headless.isVisible = true
         headless.setSize(1024, 1024)
 
-        canvas.save(f)
+        val bi = BufferedImage(canvas.width, canvas.height, BufferedImage.TYPE_INT_ARGB)
+        val g2d = bi.createGraphics()
+        canvas.print(g2d)
 
-        return vision.label(f)?.let { annotateImageResponse ->
-            Pair(f, annotateImageResponse)
+        val outputStream = ByteArrayOutputStream()
+        ImageIO.write(bi, "png", outputStream)
+
+        val bytes = outputStream.toByteArray()
+
+        return vision.label(bytes)?.let { annotateImageResponse ->
+            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
         }
     }
 }
@@ -274,7 +266,7 @@ class CloudAirDraw(private val vision: Vision): AirDraw {
 @Singleton
 @Requires(missingBeans = [Vision::class])
 class LocalAirDraw: AirDraw {
-    override fun run(readings: List<Reading>): Pair<File, AnnotateImageResponse>? {
+    override fun run(readings: List<Reading>): ImageResult? {
         val canvas = AirDrawSmileViewer.draw(readings)
         AirDrawSmileViewer.show(canvas)
         return null
