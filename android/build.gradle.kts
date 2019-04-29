@@ -5,7 +5,7 @@ plugins {
     kotlin("android")
     kotlin("android.extensions")
     kotlin("kapt")
-    id("kotlinx-serialization") version "1.3.30"
+    id("kotlinx-serialization") version "1.3.31"
 }
 
 dependencies {

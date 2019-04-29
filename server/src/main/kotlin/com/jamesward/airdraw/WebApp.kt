@@ -15,17 +15,28 @@
  */
 package com.jamesward.airdraw
 
+import com.google.cloud.ServiceOptions
+import com.google.cloud.pubsub.v1.Publisher
+import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub
+import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings
 import com.google.cloud.vision.v1.*
+import com.google.cloud.vision.v1.Feature.Type
 import com.google.protobuf.ByteString
+import com.google.pubsub.v1.*
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.env.Environment
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.jackson.serialize.JacksonObjectSerializer
 import io.micronaut.runtime.Micronaut
 import io.micronaut.views.View
+import io.reactivex.Maybe
+import io.reactivex.Single
 import smile.interpolation.KrigingInterpolation1D
 import smile.plot.Headless
 import smile.plot.LinePlot
@@ -35,26 +46,12 @@ import java.awt.Dimension
 import java.awt.GridLayout
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.ArrayBlockingQueue
+import javax.annotation.PreDestroy
 import javax.inject.Singleton
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.WindowConstants
-import com.google.cloud.vision.v1.Feature.Type
-import io.micronaut.context.annotation.Requirements
-import io.micronaut.http.MediaType
-import io.micronaut.http.server.types.files.StreamedFile
-import io.micronaut.http.server.types.files.SystemFile
-import io.micronaut.http.sse.Event
-import io.reactivex.*
-import io.reactivex.Observable
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.PublishSubject
-import org.reactivestreams.Publisher
-import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.TimeUnit
-import java.util.stream.Stream
 
 
 fun main() {
@@ -71,10 +68,10 @@ fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
     }
 }
 
-@Controller
-class WebApp(private val airDraw: AirDraw) {
+data class ImageResult(val path: String, val labelAnnotations: List<LabelAnnotation>)
 
-    val queue = ArrayBlockingQueue<Pair<String, List<LabelAnnotation>>>(256)
+@Controller
+class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
 
     @View("index")
     @Get("/")
@@ -86,7 +83,7 @@ class WebApp(private val airDraw: AirDraw) {
     fun draw(@Body readingsSingle: Single<List<Reading>>): Single<HttpResponse<String>> {
         return readingsSingle.map { readings ->
             airDraw.run(readings)?.let { (file, annotateImageResponse) ->
-                queue.add(Pair(file.path, annotateImageResponse.labelAnnotationsList.toLabelAnnotation()))
+                bus.put(ImageResult(file.path, annotateImageResponse.labelAnnotationsList.toLabelAnnotation()))
             }
 
             HttpResponse.ok("")
@@ -102,14 +99,12 @@ class WebApp(private val airDraw: AirDraw) {
     }
 
     @Get("/events")
-    fun events(): Maybe<Pair<String, List<LabelAnnotation>>> {
-        val maybe = queue.firstOrNull()
-        return if (maybe != null) {
-            queue.remove(maybe)
+    fun events(): Maybe<ImageResult> {
+        val maybe = bus.take()
+        return if (maybe != null)
             Maybe.just(maybe)
-        } else {
+        else
             Maybe.empty()
-        }
     }
 
 }
@@ -134,18 +129,113 @@ class Vision(private val myImageAnnotatorClient: MyImageAnnotatorClient) {
 // used to provide either a GCP or local ImageAnnotatorClient
 interface MyImageAnnotatorClient {
     val imageAnnotatorClient: ImageAnnotatorClient
+        get() = ImageAnnotatorClient.create()
 }
 
 @Singleton
 @Requires(property = "google.application.credentials")
-class LocalImageAnnotatorClient: MyImageAnnotatorClient {
-    override val imageAnnotatorClient = ImageAnnotatorClient.create()
-}
+class LocalImageAnnotatorClient: MyImageAnnotatorClient
 
 @Singleton
 @Requires(env = [Environment.GOOGLE_COMPUTE])
-class GCPImageAnnotatorClient: MyImageAnnotatorClient {
-    override val imageAnnotatorClient = ImageAnnotatorClient.create()
+class GCPImageAnnotatorClient: MyImageAnnotatorClient
+
+interface Bus {
+    fun put(imageResult: ImageResult)
+    fun take(): ImageResult?
+}
+
+interface CloudBusConfig {
+    val projectId: String
+        get() = ServiceOptions.getDefaultProjectId()
+
+    val topic: String
+        get() = "air-draw"
+
+    val subsciption: String
+        get() = "air-draw"
+}
+
+@Singleton
+@Requires(property = "google.application.credentials")
+class PropCloudBusConfig: CloudBusConfig
+
+@Singleton
+@Requires(env = [Environment.GOOGLE_COMPUTE])
+class GcpCloudBusConfig: CloudBusConfig
+
+@Singleton
+class CloudBus(cloudBusConfig: CloudBusConfig, private val objectSerializer: JacksonObjectSerializer): Bus, AutoCloseable {
+
+    val topicName = ProjectTopicName.of(cloudBusConfig.projectId, cloudBusConfig.topic)
+    val publisher = Publisher.newBuilder(topicName).build()
+
+    val subscriptionName = ProjectSubscriptionName.format(cloudBusConfig.projectId, cloudBusConfig.subsciption)
+
+    val subscriberStubSettings = SubscriberStubSettings.newBuilder()
+            .setTransportChannelProvider(SubscriberStubSettings.defaultGrpcTransportProviderBuilder().build())
+            .build()
+
+    val subscriber = GrpcSubscriberStub.create(subscriberStubSettings)
+    val pullRequest = PullRequest.newBuilder()
+        .setMaxMessages(1)
+        .setReturnImmediately(true)
+        .setSubscription(subscriptionName)
+        .build()
+
+    override fun put(imageResult: ImageResult) {
+        objectSerializer.serialize(imageResult).map { bytes ->
+            val data: ByteString = ByteString.copyFrom(bytes)
+
+            val pubsubMessage = PubsubMessage.newBuilder()
+                    .setData(data)
+                    .build()
+
+            // block
+            publisher.publish(pubsubMessage).get()
+        }
+    }
+
+    override fun take(): ImageResult? {
+        val pullResponse = subscriber.pullCallable().call(pullRequest)
+
+        return pullResponse.receivedMessagesList.firstOrNull()?.let { receivedMessage ->
+            val acknowledgeRequest = AcknowledgeRequest.newBuilder()
+                    .setSubscription(subscriptionName)
+                    .addAckIds(receivedMessage.ackId)
+                    .build()
+
+            subscriber.acknowledgeCallable().call(acknowledgeRequest)
+
+            objectSerializer.deserialize<ImageResult>(receivedMessage.message.data.toByteArray(), ImageResult::class.java).get()
+        }
+    }
+
+    @PreDestroy
+    override fun close() {
+        publisher.shutdown()
+        subscriber.shutdown()
+    }
+
+}
+
+@Singleton
+@Requires(missingBeans = [CloudBus::class])
+class LocalBus: Bus {
+
+    private val queue = ArrayBlockingQueue<ImageResult>(256)
+
+    override fun put(imageResult: ImageResult) {
+        queue.add(imageResult)
+    }
+
+    override fun take(): ImageResult? {
+        val maybe = queue.firstOrNull()
+        if (maybe != null)
+            queue.remove(maybe)
+
+        return maybe
+    }
 }
 
 interface AirDraw {
