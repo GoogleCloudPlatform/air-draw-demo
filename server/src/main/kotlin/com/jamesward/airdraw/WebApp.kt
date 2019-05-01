@@ -152,6 +152,7 @@ class PropCloudBusConfig: CloudBusConfig
 class GcpCloudBusConfig: CloudBusConfig
 
 @Singleton
+@Requires(beans = [CloudBusConfig::class])
 class CloudBus(cloudBusConfig: CloudBusConfig, private val objectSerializer: JacksonObjectSerializer): Bus, AutoCloseable {
 
     val topicName = ProjectTopicName.of(cloudBusConfig.projectId, cloudBusConfig.topic)

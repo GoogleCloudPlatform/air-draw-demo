@@ -29,6 +29,17 @@ android {
         targetSdkVersion(28)
         versionCode = 1
         versionName = "1.0"
+
+        val drawUrl: String? by project
+        if (drawUrl != null) {
+            val usesCleartextTraffic = if (drawUrl!!.startsWith("https")) "false" else "true"
+            manifestPlaceholders = mapOf("usesCleartextTraffic" to usesCleartextTraffic)
+            resValue("string", "draw_url", drawUrl!!)
+        }
+        else {
+            manifestPlaceholders = mapOf("usesCleartextTraffic" to "true")
+            resValue("string", "draw_url", "http://10.0.2.2:8080/draw")
+        }
     }
 
     compileOptions {
