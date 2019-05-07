@@ -116,16 +116,19 @@ class Vision(private val myImageAnnotatorClient: MyImageAnnotatorClient) {
 // used to provide either a GCP or local ImageAnnotatorClient
 interface MyImageAnnotatorClient {
     val imageAnnotatorClient: ImageAnnotatorClient
-        get() = ImageAnnotatorClient.create()
 }
 
 @Singleton
 @Requires(property = "google.application.credentials")
-class LocalImageAnnotatorClient: MyImageAnnotatorClient
+class LocalImageAnnotatorClient: MyImageAnnotatorClient {
+    override val imageAnnotatorClient = ImageAnnotatorClient.create()
+}
 
 @Singleton
 @Requires(env = [Environment.GOOGLE_COMPUTE])
-class GCPImageAnnotatorClient: MyImageAnnotatorClient
+class GCPImageAnnotatorClient: MyImageAnnotatorClient {
+    override val imageAnnotatorClient = ImageAnnotatorClient.create()
+}
 
 interface Bus {
     fun put(imageResult: ImageResult)
