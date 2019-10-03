@@ -40,6 +40,13 @@ Run the client:
     ./gradlew android:build
     ```
 
+1. For a physical device, [setup adb](https://developer.android.com/studio/run/device)
+
+1. Run on a device using an external server:
+    ```
+    ./gradlew android:installDebug -DdrawUrl=https://YOUR_URL/draw
+    ```
+
 Use GCP for Pub/Sub & Vision API:
 
 1. Go to: https://console.cloud.google.com/apis/library/vision.googleapis.com
