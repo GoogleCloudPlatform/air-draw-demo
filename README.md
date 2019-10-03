@@ -44,7 +44,7 @@ Run the client:
 
 1. Run on a device using an external server:
     ```
-    ./gradlew android:installDebug -DdrawUrl=https://YOUR_URL/draw
+    ./gradlew android:installDebug -PdrawUrl=https://YOUR_URL/draw
     ```
 
 Use GCP for Pub/Sub & Vision API:
