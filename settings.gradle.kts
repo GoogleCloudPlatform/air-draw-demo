@@ -1,7 +1,7 @@
 rootProject.name = "air-draw"
 
 // when running the root jib task, ignore the android subproject
-if (startParameter.taskRequests.find { it.args.contains(":server:jibDockerBuild") } == null) {
+if (startParameter.taskRequests.find { it.args.contains(":server:jib") } == null) {
     include("common", "android", "server")
 } else {
     include("common", "server")
