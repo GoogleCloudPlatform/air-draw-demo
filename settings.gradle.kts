@@ -2,9 +2,9 @@ rootProject.name = "air-draw"
 
 // when running the root stage task, ignore the android subproject
 if (startParameter.taskRequests.find { it.args.contains("stage") } == null) {
-    include("android", "server")
+    include("common", "android", "server")
 } else {
-    include("server")
+    include("common", "server")
 }
 
 pluginManagement {

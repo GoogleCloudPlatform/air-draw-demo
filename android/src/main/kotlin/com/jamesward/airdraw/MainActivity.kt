@@ -15,6 +15,7 @@
  */
 package com.jamesward.airdraw
 
+import com.jamesward.airdraw.data.*
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -27,16 +28,11 @@ import android.widget.ToggleButton
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
 
 
 class MainActivity: AppCompatActivity() {
 
-    var orientationSensorMaybe: OrientationSensor? = null
-
-    @Serializable
-    data class Orientation(val azimuth: Float, val pitch: Float, val timestamp: Long)
+    private var orientationSensorMaybe: OrientationSensor? = null
 
     class OrientationSensor: SensorEventListener {
         val readings: MutableList<Orientation> = ArrayList()
@@ -71,7 +67,6 @@ class MainActivity: AppCompatActivity() {
         setSupportActionBar(toolbar)
     }
 
-    @UnstableDefault
     fun drawClick(view: View) {
         val on = (view as ToggleButton).isChecked
 
@@ -88,11 +83,10 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                val json = Json.stringify(Orientation.serializer().list, orientationSensor.readings.toList())
                 val url = resources.getString(R.string.draw_url)
                 println(url)
                 Fuel.post(url)
-                        .jsonBody(json)
+                        .jsonBody(orientationSensor.readings.json())
                         .response { result ->
                             println(result)
                         }

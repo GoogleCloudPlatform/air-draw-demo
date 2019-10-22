@@ -6,7 +6,7 @@
 
 Run the server:
 ```
-./gradlew -t server:run
+./gradlew -t :server:run
 ```
 
 Visit: [http://localhost:8080](http://localhost:8080)
@@ -46,6 +46,13 @@ Run the client:
     ```
     ./gradlew android:installDebug -PdrawUrl=https://YOUR_URL/draw
     ```
+
+1. Or to run from Android Studio / IntelliJ, create a `gradle.properties` file in your root project directory containing:
+    ```
+   drawUrl=http://YOUR_DRAW_SERVER:8080/draw
+    ```
+
+   And setup the activity to first run *Gradle-aware Make* with a task of `:android:assembleDebug`
 
 Use GCP for Pub/Sub & Vision API:
 
