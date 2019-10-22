@@ -1,6 +1,6 @@
 # Air Draw
 
-[![Run on Google Cloud](https://storage.googleapis.com/cloudrun/button.png)](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshellboostmode=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/GoogleCloudPlatform/air-draw-demo.git)
+[![Run on Google Cloud](https://deploy.cloud.run/button.png)](https://deploy.cloud.run)
 
 ## Local Dev
 
