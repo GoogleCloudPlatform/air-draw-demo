@@ -46,3 +46,9 @@ tasks.compileKotlin {
 application {
     mainClassName = "com.jamesward.airdraw.WebAppKt"
 }
+
+jib {
+    container {
+        mainClass = application.mainClassName
+    }
+}

@@ -1,7 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/javac:8'
     entrypoint: './gradlew'
-    args: [':server:jib', '-Djib.to.image=gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA', '-Djib.to.credHelper=gcr']
+    args: ['--console=plain', '--no-daemon', ':server:jib', '-Djib.to.image=gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA', '-Djib.to.credHelper=gcr']
 
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['beta', 'run', 'deploy', '--image=gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA', '--platform=managed', '--project=$PROJECT_ID', '--region=us-central1', '--allow-unauthenticated', '$REPO_NAME']
