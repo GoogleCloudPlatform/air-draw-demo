@@ -8,15 +8,23 @@ plugins {
     id("kotlinx-serialization") version "1.3.31"
 }
 
+apply(plugin = "com.google.gms.google-services")
+
 dependencies {
     implementation(kotlin("stdlib-jdk8", KotlinCompilerVersion.VERSION))
     implementation(kotlin("reflect", KotlinCompilerVersion.VERSION))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.0")
 
-    implementation("com.android.support:appcompat-v7:28.0.0")
-    implementation("com.android.support:design:28.0.0")
+    implementation("androidx.appcompat:appcompat:1.1.0")
+    implementation("com.google.android.material:material:1.1.0-alpha10")
+    implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta2")
 
     implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
+
+    implementation("com.google.firebase:firebase-ml-vision:23.0.0")
+    implementation("com.google.firebase:firebase-ml-vision-image-label-model:18.0.0")
+
+    implementation("org.tensorflow:tensorflow-lite:1.13.1")
 }
 
 android {
@@ -45,6 +53,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    aaptOptions {
+        noCompress("tflite")
     }
 
     lintOptions {
