@@ -6,15 +6,24 @@ plugins {
     kotlin("android.extensions")
 }
 
+if (file("../google-services.json").exists()) {
+    apply("com.google.gms.google-services")
+}
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("com.android.support:appcompat-v7:28.0.0")
-    implementation("com.android.support:design:28.0.0")
+    implementation("androidx.appcompat:appcompat:1.1.0")
+    implementation("com.google.android.material:material:1.2.0-alpha01")
+    implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta3")
 
     implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
 
     implementation(project(":common"))
+    implementation("com.google.firebase:firebase-ml-vision:24.0.0")
+    implementation("com.google.firebase:firebase-ml-vision-image-label-model:19.0.0")
+
+    implementation("org.tensorflow:tensorflow-lite:1.13.1")
 }
 
 android {
@@ -50,6 +59,10 @@ android {
     kotlinOptions {
         this as KotlinJvmOptions
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
+    aaptOptions {
+        noCompress("tflite")
     }
 
     packagingOptions {
