@@ -44,12 +44,12 @@ Run the client:
 
 1. Run on a device using an external server:
     ```
-    ./gradlew android:installDebug -PdrawUrl=https://YOUR_URL/draw
+    ./gradlew android:installDebug -PdrawUrl=YOUR_DRAW_SERVER_URL
     ```
 
 1. Or to run from Android Studio / IntelliJ, create a `gradle.properties` file in your root project directory containing:
     ```
-   drawUrl=http://YOUR_DRAW_SERVER:8080/draw
+   drawUrl=YOUR_DRAW_SERVER_URL
     ```
 
    And setup the activity to first run *Gradle-aware Make* with a task of `:android:assembleDebug`

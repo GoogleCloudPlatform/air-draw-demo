@@ -45,7 +45,7 @@ android {
         }
         else {
             manifestPlaceholders = mapOf("usesCleartextTraffic" to "true")
-            resValue("string", "draw_url", "http://10.0.2.2:8080/draw")
+            resValue("string", "draw_url", "http://10.0.2.2:8080")
         }
     }
 

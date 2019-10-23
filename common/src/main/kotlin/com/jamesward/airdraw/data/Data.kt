@@ -16,4 +16,9 @@ fun MutableList<Orientation>.json(): String {
 data class LabelAnnotation(val description: String, val score: Float)
 
 @Serializable
-data class ImageResult(val image: ByteArray, val labelAnnotations: List<LabelAnnotation>)
+data class ImageResult(val image: ByteArray, val labelAnnotations: List<LabelAnnotation>) {
+    fun json(): String {
+        val json = Json(JsonConfiguration.Stable)
+        return json.stringify(serializer(), this)
+    }
+}

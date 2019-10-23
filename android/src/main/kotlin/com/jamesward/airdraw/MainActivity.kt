@@ -36,6 +36,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
 import org.tensorflow.lite.Interpreter
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -161,6 +162,24 @@ class MainActivity: AppCompatActivity() {
         postGuess(thirdGuess, digitSequence[2])
         postGuess(fourthGuess, digitSequence[3])
 
+        val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
+
+        val buffer = ByteBuffer.allocate(bitmap.byteCount)
+        bitmap.copyPixelsToBuffer(buffer)
+
+        val byteArrayBitmapStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
+
+        val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
+
+        val url = resources.getString(R.string.draw_url) + "/show"
+        println(url)
+        Fuel.post(url)
+                .jsonBody(imageResult.json())
+                .response { result ->
+                    println(result)
+                }
+
 
 //        digitData.sort()
 //        digitData.forEach { digitResults ->
@@ -241,7 +260,7 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                val url = resources.getString(R.string.draw_url)
+                val url = resources.getString(R.string.draw_url) + "/draw"
                 println(url)
                 Fuel.post(url)
                         .jsonBody(orientationSensor.readings.json())
