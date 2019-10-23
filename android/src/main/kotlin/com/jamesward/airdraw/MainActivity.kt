@@ -100,7 +100,7 @@ class MainActivity: AppCompatActivity() {
     private var modelInputSize: Int = 0 // will be inferred from TF Lite model
     lateinit private var interpreter: Interpreter
 
-    fun clearClick() {
+    fun clearClick(view: View) {
         drawingCanvas.clear()
         bestGuess.text = ""
         secondGuess.text = ""
@@ -139,7 +139,7 @@ class MainActivity: AppCompatActivity() {
         return byteBuffer
     }
 
-    fun localLabelClick() {
+    fun localLabelClick(view: View) {
 
         val bitmap = drawingCanvas.getBitmap()
         val digitData = checkDigit(bitmap)
@@ -183,7 +183,7 @@ class MainActivity: AppCompatActivity() {
         textView.text = "${guess.first}:" + "   %3.2f%%".format(value)
     }
 
-    fun cloudLabelClick() {
+    fun cloudLabelClick(view: View) {
         val bitmap = drawingCanvas.getBitmap()
         val firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
         val labeler = FirebaseVision.getInstance().cloudImageLabeler
