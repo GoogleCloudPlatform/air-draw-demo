@@ -36,13 +36,5 @@ limitations under the License.
     </com.google.android.material.appbar.AppBarLayout>
 
     <include layout="@layout/activity_content" />
-<!--    <ToggleButton-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:onClick="drawClick"-->
-<!--        android:textOff="@string/draw_button_off"-->
-<!--        android:textOn="@string/draw_button_on"-->
-<!--        android:textSize="72sp" />-->
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

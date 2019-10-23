@@ -34,14 +34,16 @@
         app:layout_constraintStart_toEndOf="@+id/localIdButton"
         app:layout_constraintTop_toTopOf="@+id/topGuide" />
 
-    <Button
+    <ToggleButton
         android:id="@+id/sensorifyButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="0dp"
         android:padding="8dp"
-        android:text="Sensorify"
+        android:textOff="Sensorify"
+        android:textOn="Finish"
         android:textSize="12sp"
+        android:onClick="drawClick"
         app:layout_constraintStart_toEndOf="@+id/cloudIdButton"
         app:layout_constraintEnd_toEndOf="@+id/rightGuide"
         app:layout_constraintTop_toTopOf="@+id/topGuide" />

@@ -77,8 +77,10 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
     @Post("/draw")
     fun draw(@Body readingsSingle: Single<List<Orientation>>): Single<HttpResponse<String>> {
         return readingsSingle.map { readings ->
-            airDraw.run(readings)?.let { bus.put(it) }
-            HttpResponse.ok("")
+            airDraw.run(readings)?.let { imageResult ->
+                bus.put(imageResult)
+                HttpResponse.ok(imageResult.json())
+            }
         }
     }
 
@@ -239,6 +241,16 @@ interface AirDraw {
 @Requires(beans = [Vision::class])
 class CloudAirDraw(private val vision: Vision): AirDraw {
     override fun run(readings: List<Orientation>): ImageResult? {
+        val bytes = Drawer.draw(readings)
+
+        return vision.label(bytes)?.let { annotateImageResponse ->
+            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
+        }
+    }
+}
+
+object Drawer {
+    fun draw(readings: List<Orientation>): ByteArray {
         val canvas = AirDrawSmileViewer.draw(readings)
 
         canvas.getAxis(0).isGridVisible = false
@@ -261,11 +273,7 @@ class CloudAirDraw(private val vision: Vision): AirDraw {
         val outputStream = ByteArrayOutputStream()
         ImageIO.write(bi, "png", outputStream)
 
-        val bytes = outputStream.toByteArray()
-
-        return vision.label(bytes)?.let { annotateImageResponse ->
-            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
-        }
+        return outputStream.toByteArray()
     }
 }
 
@@ -275,7 +283,7 @@ class LocalAirDraw: AirDraw {
     override fun run(readings: List<Orientation>): ImageResult? {
         val canvas = AirDrawSmileViewer.draw(readings)
         AirDrawSmileViewer.show(canvas)
-        return null
+        return ImageResult(Drawer.draw(readings), emptyList())
     }
 }
 

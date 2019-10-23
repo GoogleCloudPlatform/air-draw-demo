@@ -19,6 +19,7 @@ import com.jamesward.airdraw.data.*
 import android.content.Context
 import android.content.res.AssetManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -266,8 +267,18 @@ class MainActivity: AppCompatActivity() {
                 Fuel.post(url)
                         .timeoutRead(60 * 1000)
                         .jsonBody(orientationSensor.readings.json())
-                        .response { result ->
-                            println(result)
+                        .responseString { result ->
+                            result.fold({ json ->
+                                val imageResult = ImageResult.fromJson(json)
+                                imageResult?.let {
+                                    val bitmap = BitmapFactory.decodeByteArray(it.image, 0, it.image.size)
+                                    drawingCanvas.setBitmap(bitmap)
+
+                                    // todo: label annotations
+                                }
+                            }, {
+                                println(it)
+                            })
                         }
 
                 orientationSensorMaybe = null

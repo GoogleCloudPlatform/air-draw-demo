@@ -5,6 +5,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import kotlinx.android.synthetic.main.activity_content.view.*
 
 class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr) {
 
@@ -29,6 +30,11 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
         draw(canvas)
 //        invalidate()
         return bitmap
+    }
+
+    fun setBitmap(bitmap: Bitmap) {
+        cachedBitmap = bitmap
+        invalidate()
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -62,6 +68,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     }
 
     override fun onDraw(canvas: Canvas?) {
+        // todo: draw bitmap
         canvas!!.drawPath(drawingPath, paint)
 //        if (cachedBitmap != null) {
 //            canvas.scale(.5f, .5f)

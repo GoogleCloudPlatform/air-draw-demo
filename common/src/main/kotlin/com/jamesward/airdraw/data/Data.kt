@@ -21,4 +21,11 @@ data class ImageResult(val image: ByteArray, val labelAnnotations: List<LabelAnn
         val json = Json(JsonConfiguration.Stable)
         return json.stringify(serializer(), this)
     }
+
+    companion object {
+        fun fromJson(s: String): ImageResult? {
+            val json = Json(JsonConfiguration.Stable)
+            return json.parse(serializer(), s)
+        }
+    }
 }
