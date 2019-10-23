@@ -5,4 +5,3 @@ build/
 /local.properties
 /gradle.properties
 /android/google-services.json
-android/src/main/assets/mnist.tflite
