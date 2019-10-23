@@ -25,8 +25,10 @@ function poll() {
         }, "");
       });
     }
+
+    window.setTimeout(poll, 1000);
   });
 
 }
 
-window.setInterval(poll, 1000);
+poll();

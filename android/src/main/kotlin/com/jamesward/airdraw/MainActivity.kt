@@ -175,6 +175,7 @@ class MainActivity: AppCompatActivity() {
         val url = resources.getString(R.string.draw_url) + "/show"
         println(url)
         Fuel.post(url)
+                .timeoutRead(60 * 1000)
                 .jsonBody(imageResult.json())
                 .response { result ->
                     println(result)
@@ -263,6 +264,7 @@ class MainActivity: AppCompatActivity() {
                 val url = resources.getString(R.string.draw_url) + "/draw"
                 println(url)
                 Fuel.post(url)
+                        .timeoutRead(60 * 1000)
                         .jsonBody(orientationSensor.readings.json())
                         .response { result ->
                             println(result)
