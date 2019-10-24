@@ -37,6 +37,7 @@ import io.micronaut.views.View
 import io.reactivex.Single
 import smile.interpolation.Interpolation
 import smile.interpolation.KrigingInterpolation1D
+import smile.plot.Headless
 import smile.plot.LinePlot
 import smile.plot.PlotCanvas
 import java.awt.BasicStroke
@@ -51,6 +52,7 @@ import javax.inject.Singleton
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.WindowConstants
+import kotlin.math.abs
 
 
 fun main() {
@@ -258,12 +260,10 @@ object Drawer {
         canvas.getAxis(1).isLabelVisible = false
         canvas.margin = 0.0
 
-        canvas.size = Dimension(1024, 1024)
-        canvas.isVisible = true
-
-        // these two lines are magic. don't mess with them
-        canvas.addNotify()
-        canvas.validate()
+        val headless = Headless(canvas)
+        headless.pack()
+        headless.isVisible = true
+        headless.setSize(1024, 1024)
 
         val bi = BufferedImage(canvas.width, canvas.height, BufferedImage.TYPE_INT_ARGB)
         val g2d = bi.createGraphics()
@@ -326,28 +326,19 @@ object AirDrawSmileViewer {
             doubleArrayOf(ix, iy)
         }.toTypedArray()
 
-        //val yBounds = doubleArrayOf(-0.5, 1.5)
-        //val defaultXWidth = 2
-
-        val minY = xy.minBy { it[1] }!![1]
-        val maxY = xy.maxBy { it[1] }!![1]
-
-        val yBounds = doubleArrayOf(minY, maxY)
+        val yBounds = doubleArrayOf(-0.5, 1.5)
+        val defaultXWidth = 2
 
         val minX = xy.minBy { it[0] }!![0]
         val maxX = xy.maxBy { it[0] }!![0]
 
-        //val width = maxX - minX
-        /*
+        val width = abs(minX) + abs(maxX)
         val xBounds = if (width < defaultXWidth) {
             val more = (defaultXWidth - width) / 2
             doubleArrayOf(minX - more, maxX + more)
         } else {
             doubleArrayOf(minX, maxX)
         }
-         */
-        val xBounds = doubleArrayOf(minX, maxX)
-        //xy.forEach { println(it[0]); println(it[1]); }
 
         val linePlot = LinePlot(xy).setStroke(BasicStroke(20F, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND))
         val canvas = PlotCanvas(doubleArrayOf(xBounds[0], yBounds[0]), doubleArrayOf(xBounds[1], yBounds[1]))

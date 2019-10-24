@@ -50,6 +50,5 @@ application {
 jib {
     container {
         mainClass = application.mainClassName
-        args = listOf("-Djava.awt.headless=true")
     }
 }
