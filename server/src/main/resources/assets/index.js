@@ -16,7 +16,7 @@
 function poll() {
 
   fetch("/events").then(res => {
-    if (res.status == 200) {
+    if (res.status === 200) {
       res.json().then(data => {
         document.body.style.backgroundImage = "url('data:image/png;base64," + data.image + "')";
 
