@@ -1,8 +1,10 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     application
     kotlin("jvm")
     kotlin("kapt")
-    id("com.google.cloud.tools.jib") version "1.7.0"
+    id("com.github.johnrengelman.shadow") version "4.0.4"
 }
 
 dependencies {
@@ -47,9 +49,6 @@ application {
     mainClassName = "com.jamesward.airdraw.WebAppKt"
 }
 
-jib {
-    container {
-        mainClass = application.mainClassName
-        args = listOf("-Djava.awt.headless=true")
-    }
+tasks.withType<ShadowJar> {
+    mergeServiceFiles()
 }
