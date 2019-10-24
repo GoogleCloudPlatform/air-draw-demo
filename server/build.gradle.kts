@@ -49,7 +49,7 @@ application {
 
 jib {
     container {
-        jvmFlags = listOf("-Djava.awt.headless=true")
         mainClass = application.mainClassName
+        args = listOf("-Djava.awt.headless=true")
     }
 }
