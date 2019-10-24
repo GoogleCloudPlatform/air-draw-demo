@@ -25,7 +25,6 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
 
     fun getBitmap():Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        cachedBitmap = bitmap
         val canvas = Canvas(bitmap)
         draw(canvas)
 //        invalidate()
@@ -38,6 +37,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        cachedBitmap = null
         var handled = false
         if (event != null) {
             when {
@@ -64,15 +64,14 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
 
     fun clear() {
         drawingPath.reset()
+        cachedBitmap = null
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas?) {
-        // todo: draw bitmap
-        canvas!!.drawPath(drawingPath, paint)
-//        if (cachedBitmap != null) {
-//            canvas.scale(.5f, .5f)
-//            canvas.drawBitmap(cachedBitmap, 0f, 0f, null)
-//        }
+        if (cachedBitmap != null)
+            canvas!!.drawBitmap(cachedBitmap!!, 0f, 0f, null)
+        else
+            canvas!!.drawPath(drawingPath, paint)
     }
 }

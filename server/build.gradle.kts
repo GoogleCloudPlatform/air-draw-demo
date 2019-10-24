@@ -11,7 +11,7 @@ dependencies {
 
     compile(project(":common"))
 
-    compile("com.github.haifengl:smile-plot:1.5.2")
+    compile("com.github.haifengl:smile-plot:1.5.3")
     compile("com.github.haifengl:smile-interpolation:1.5.3")
     compile("com.github.haifengl:smile-netlib:1.5.3")
 

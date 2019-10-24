@@ -146,7 +146,7 @@ class MainActivity: AppCompatActivity() {
         val bitmap = drawingCanvas.getBitmap()
         val digitData = checkDigit(bitmap)
         val digitSequence = digitData[0].asSequence().mapIndexed {
-            index: Int, value: Float -> Pair(index, value) }.sortedByDescending { it.second }.toList()
+            index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending { it.second }.toList()
         // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
         // Then sort both arrays with custom comparator
 //        var digitDataMap = digitData[0].map {  }
@@ -199,7 +199,7 @@ class MainActivity: AppCompatActivity() {
 //        }
     }
 
-    private fun postGuess(textView: TextView, guess: Pair<Int, Float>) {
+    private fun postGuess(textView: TextView, guess: Pair<String, Float>) {
         val value = guess.second * 100
         textView.text = "${guess.first}:" + "   %3.2f%%".format(value)
     }
@@ -232,11 +232,18 @@ class MainActivity: AppCompatActivity() {
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 // the azimuth goes from -PI to PI potentially causing orientations to "cross over" from -PI to PI
                 // to avoid this we convert negative readings to positive resulting in a range 0 to PI*2
+
                 val absAzimuth = if (orientationAngles[0] < 0)
                     orientationAngles[0] + (Math.PI.toFloat() * 2)
                 else
                     orientationAngles[0]
-                val orientation = Orientation(absAzimuth, orientationAngles[1], e.timestamp)
+
+                val pitch = if (orientationAngles[1].isNaN())
+                    0f
+                else
+                    orientationAngles[1]
+
+                val orientation = Orientation(absAzimuth, pitch, e.timestamp)
                 readings.add(orientation)
             }
         }
@@ -274,7 +281,19 @@ class MainActivity: AppCompatActivity() {
                                     val bitmap = BitmapFactory.decodeByteArray(it.image, 0, it.image.size)
                                     drawingCanvas.setBitmap(bitmap)
 
-                                    // todo: label annotations
+                                    fun setView(textView: TextView, labelAnnotation: LabelAnnotation?) {
+                                        if (labelAnnotation != null) {
+                                            postGuess(textView, Pair(labelAnnotation.description, labelAnnotation.score))
+                                        }
+                                        else {
+                                            textView.text = ""
+                                        }
+                                    }
+
+                                    setView(bestGuess, it.labelAnnotations.getOrNull(0))
+                                    setView(secondGuess, it.labelAnnotations.getOrNull(1))
+                                    setView(thirdGuess, it.labelAnnotations.getOrNull(2))
+                                    setView(fourthGuess, it.labelAnnotations.getOrNull(3))
                                 }
                             }, {
                                 println(it)
