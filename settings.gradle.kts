@@ -21,6 +21,9 @@ pluginManagement {
             if (requested.id.id == "kotlinx-serialization") {
                 useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
             }
+            if (requested.id.id == "com.google.gms.google-services") {
+                useModule("com.google.gms:google-services:${requested.version}")
+            }
         }
     }
 }

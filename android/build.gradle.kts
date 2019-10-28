@@ -4,10 +4,7 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
-}
-
-if (file("../google-services.json").exists()) {
-    apply("com.google.gms.google-services")
+    id("com.google.gms.google-services") version ("4.3.2")
 }
 
 dependencies {
@@ -24,6 +21,10 @@ dependencies {
     implementation("com.google.firebase:firebase-ml-vision-image-label-model:19.0.0")
 
     implementation("org.tensorflow:tensorflow-lite:1.13.1")
+}
+
+googleServices {
+    disableVersionCheck = true
 }
 
 android {

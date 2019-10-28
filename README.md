@@ -15,6 +15,8 @@ Run the client:
 
 1. [Download Android Command Line Tools:](https://developer.android.com/studio)
 
+1. [Get a Firebase google-services.json](https://support.google.com/firebase/answer/7015592?hl=en) and put it in the `android` directory
+
 1. Install the SDK:
     ```
     mkdir android-sdk
