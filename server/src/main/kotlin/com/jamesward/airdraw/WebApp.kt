@@ -15,6 +15,7 @@
  */
 package com.jamesward.airdraw
 
+import com.jamesward.airdraw.data.*
 import com.google.cloud.ServiceOptions
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub
@@ -33,17 +34,17 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.jackson.serialize.JacksonObjectSerializer
 import io.micronaut.runtime.Micronaut
 import io.micronaut.views.View
-import io.reactivex.Maybe
 import io.reactivex.Single
+import smile.interpolation.Interpolation
 import smile.interpolation.KrigingInterpolation1D
 import smile.plot.Headless
 import smile.plot.LinePlot
 import smile.plot.PlotCanvas
 import java.awt.BasicStroke
 import java.awt.Dimension
-import java.awt.GridLayout
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.lang.Exception
 import java.util.concurrent.ArrayBlockingQueue
 import javax.annotation.PreDestroy
 import javax.imageio.ImageIO
@@ -51,23 +52,18 @@ import javax.inject.Singleton
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.WindowConstants
+import kotlin.math.abs
 
 
 fun main() {
     Micronaut.build().packages("com.jamesward.airdraw").mainClass(WebApp::class.java).start()
 }
 
-data class Reading(val azimuth: Float, val pitch: Float, val timestamp: Long)
-
-data class LabelAnnotation(val description: String, val score: Float)
-
 fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
     return this.map { entityAnnotation ->
         LabelAnnotation(entityAnnotation.description, entityAnnotation.score)
     }
 }
-
-data class ImageResult(val image: ByteArray, val labelAnnotations: List<LabelAnnotation>)
 
 @Controller
 class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
@@ -79,20 +75,28 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
     }
 
     @Post("/draw")
-    fun draw(@Body readingsSingle: Single<List<Reading>>): Single<HttpResponse<String>> {
+    fun draw(@Body readingsSingle: Single<List<Orientation>>): Single<HttpResponse<String>> {
         return readingsSingle.map { readings ->
-            airDraw.run(readings)?.let { bus.put(it) }
-            HttpResponse.ok("")
+            airDraw.run(readings)?.let { imageResult ->
+                bus.put(imageResult)
+                HttpResponse.ok(imageResult.json())
+            }
         }
     }
 
+    @Post("/show")
+    fun show(@Body imageResult: ImageResult): HttpResponse<String> {
+        bus.put(imageResult)
+        return HttpResponse.ok("")
+    }
+
     @Get("/events")
-    fun events(): Maybe<ImageResult> {
+    fun events(): HttpResponse<ImageResult> {
         val maybe = bus.take()
         return if (maybe != null)
-            Maybe.just(maybe)
+            HttpResponse.ok(maybe)
         else
-            Maybe.empty()
+            HttpResponse.noContent()
     }
 
 }
@@ -230,15 +234,24 @@ class LocalBus: Bus {
 }
 
 interface AirDraw {
-    fun run(readings: List<Reading>): ImageResult?
+    fun run(readings: List<Orientation>): ImageResult?
 }
 
 @Singleton
 @Requires(beans = [Vision::class])
 class CloudAirDraw(private val vision: Vision): AirDraw {
-    override fun run(readings: List<Reading>): ImageResult? {
+    override fun run(readings: List<Orientation>): ImageResult? {
         val canvas = AirDrawSmileViewer.draw(readings)
+        val bytes = Drawer.draw(canvas)
 
+        return vision.label(bytes)?.let { annotateImageResponse ->
+            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
+        }
+    }
+}
+
+object Drawer {
+    fun draw(canvas: PlotCanvas): ByteArray {
         canvas.getAxis(0).isGridVisible = false
         canvas.getAxis(0).isFrameVisible = false
         canvas.getAxis(0).isLabelVisible = false
@@ -259,41 +272,49 @@ class CloudAirDraw(private val vision: Vision): AirDraw {
         val outputStream = ByteArrayOutputStream()
         ImageIO.write(bi, "png", outputStream)
 
-        val bytes = outputStream.toByteArray()
-
-        return vision.label(bytes)?.let { annotateImageResponse ->
-            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
-        }
+        return outputStream.toByteArray()
     }
 }
 
 @Singleton
 @Requires(missingBeans = [Vision::class])
 class LocalAirDraw: AirDraw {
-    override fun run(readings: List<Reading>): ImageResult? {
+
+    // displays the drawing in a local window and draws it to a bitmap
+    override fun run(readings: List<Orientation>): ImageResult? {
         val canvas = AirDrawSmileViewer.draw(readings)
-        AirDrawSmileViewer.show(canvas)
-        return null
+        // todo: move this to a debug mode that doesn't return the ImageResult or something
+        //       because the canvas can't be reused for both the jpanel and the bitmap
+        //       and having two different canvasi also causes problems where one doesn't get rendered
+        //       and it is nice to have the interactive plotcanvas for debugging ranges
+        //AirDrawSmileViewer.show(canvas)
+        return ImageResult(Drawer.draw(canvas), emptyList())
     }
 }
 
 object AirDrawSmileViewer {
+
     fun show(jPanel: JPanel) {
         val frame = JFrame()
         frame.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-        frame.contentPane.add(JPanel(GridLayout(4, 4)))
-        frame.size = Dimension(1000, 1000)
+        frame.contentPane.add(jPanel)
+        frame.size = Dimension(1024, 1024)
         frame.isVisible = true
-        frame.add(jPanel)
     }
 
-    fun draw(readings: List<Reading>): PlotCanvas {
+    fun draw(readings: List<Orientation>): PlotCanvas {
         val t = readings.map { it.timestamp.toDouble() }.toDoubleArray()
         val x = readings.map { it.azimuth.toDouble() }.toDoubleArray()
         val y = readings.map { it.pitch.toDouble() * -1 }.toDoubleArray()
 
         val xl = KrigingInterpolation1D(t, x)
-        val yl = KrigingInterpolation1D(t, y)
+
+        // the pitch (y) may be the same across all readings which means the values can't be interpolated
+        val yl = try {
+            KrigingInterpolation1D(t, y)
+        } catch (e: Exception) {
+            Interpolation { it }
+        }
 
         val minTimestamp = readings.minBy { it.timestamp }!!.timestamp
         val maxTimestamp = readings.maxBy { it.timestamp }!!.timestamp
@@ -311,7 +332,7 @@ object AirDrawSmileViewer {
         val minX = xy.minBy { it[0] }!![0]
         val maxX = xy.maxBy { it[0] }!![0]
 
-        val width = Math.abs(minX) + Math.abs(maxX)
+        val width = abs(minX) + abs(maxX)
         val xBounds = if (width < defaultXWidth) {
             val more = (defaultXWidth - width) / 2
             doubleArrayOf(minX - more, maxX + more)

@@ -15,11 +15,11 @@
  */
 package com.jamesward.airdraw
 
+import com.jamesward.airdraw.data.*
 import android.content.Context
 import android.content.res.AssetManager
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -36,9 +36,8 @@ import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
 import org.tensorflow.lite.Interpreter
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -48,7 +47,8 @@ import java.nio.channels.FileChannel
 
 class MainActivity: AppCompatActivity() {
 
-    var orientationSensorMaybe: OrientationSensor? = null
+    private var orientationSensorMaybe: OrientationSensor? = null
+
     lateinit var clearButton: Button
     lateinit var localLabel: Button
     lateinit var drawingCanvas: DrawingCanvas
@@ -103,7 +103,7 @@ class MainActivity: AppCompatActivity() {
     lateinit private var interpreter: Interpreter
 
     fun clearClick(view: View) {
-        drawingCanvas?.clear()
+        drawingCanvas.clear()
         bestGuess.text = ""
         secondGuess.text = ""
         thirdGuess.text = ""
@@ -114,7 +114,7 @@ class MainActivity: AppCompatActivity() {
         val resizedImage = Bitmap.createScaledBitmap(bitmap, inputImageWidth, inputImageHeight, true)
         val byteBuffer = convertBitmapToByteBuffer(resizedImage)
         val result = Array(1) { FloatArray(10) }
-        interpreter?.run(byteBuffer, result)
+        interpreter.run(byteBuffer, result)
 //        result.sort()
 
         return result
@@ -143,11 +143,10 @@ class MainActivity: AppCompatActivity() {
 
     fun localLabelClick(view: View) {
 
-
         val bitmap = drawingCanvas.getBitmap()
-        var digitData = checkDigit(bitmap)
+        val digitData = checkDigit(bitmap)
         val digitSequence = digitData[0].asSequence().mapIndexed {
-            index: Int, value: Float -> Pair(index, value) }.sortedByDescending { it.second }.toList()
+            index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending { it.second }.toList()
         // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
         // Then sort both arrays with custom comparator
 //        var digitDataMap = digitData[0].map {  }
@@ -163,6 +162,25 @@ class MainActivity: AppCompatActivity() {
         postGuess(secondGuess, digitSequence[1])
         postGuess(thirdGuess, digitSequence[2])
         postGuess(fourthGuess, digitSequence[3])
+
+        val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
+
+        val buffer = ByteBuffer.allocate(bitmap.byteCount)
+        bitmap.copyPixelsToBuffer(buffer)
+
+        val byteArrayBitmapStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
+
+        val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
+
+        val url = resources.getString(R.string.draw_url) + "/show"
+        println(url)
+        Fuel.post(url)
+                .timeoutRead(60 * 1000)
+                .jsonBody(imageResult.json())
+                .response { result ->
+                    println(result)
+                }
 
 
 //        digitData.sort()
@@ -181,15 +199,15 @@ class MainActivity: AppCompatActivity() {
 //        }
     }
 
-    private fun postGuess(textView: TextView, guess: Pair<Int, Float>) {
+    private fun postGuess(textView: TextView, guess: Pair<String, Float>) {
         val value = guess.second * 100
-        textView.setText("${guess.first}:" + "   %3.2f%%".format(value))
+        textView.text = "${guess.first}:" + "   %3.2f%%".format(value)
     }
 
     fun cloudLabelClick(view: View) {
-        var bitmap = drawingCanvas.getBitmap()
-        var firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
-        var labeler = FirebaseVision.getInstance().getCloudImageLabeler()
+        val bitmap = drawingCanvas.getBitmap()
+        val firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
+        val labeler = FirebaseVision.getInstance().cloudImageLabeler
         labeler.processImage(firebaseImage).addOnSuccessListener { list ->
             for (item in list) {
                 println("cloud labeled item text, id, confidence = ${item.text}, ${item.entityId}, ${item.confidence}")
@@ -200,9 +218,6 @@ class MainActivity: AppCompatActivity() {
             println("canceled!")
         }
     }
-
-    @Serializable
-    data class Orientation(val azimuth: Float, val pitch: Float, val timestamp: Long)
 
     class OrientationSensor: SensorEventListener {
         val readings: MutableList<Orientation> = ArrayList()
@@ -217,11 +232,18 @@ class MainActivity: AppCompatActivity() {
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 // the azimuth goes from -PI to PI potentially causing orientations to "cross over" from -PI to PI
                 // to avoid this we convert negative readings to positive resulting in a range 0 to PI*2
+
                 val absAzimuth = if (orientationAngles[0] < 0)
                     orientationAngles[0] + (Math.PI.toFloat() * 2)
                 else
                     orientationAngles[0]
-                val orientation = Orientation(absAzimuth, orientationAngles[1], e.timestamp)
+
+                val pitch = if (orientationAngles[1].isNaN())
+                    0f
+                else
+                    orientationAngles[1]
+
+                val orientation = Orientation(absAzimuth, pitch, e.timestamp)
                 readings.add(orientation)
             }
         }
@@ -231,7 +253,6 @@ class MainActivity: AppCompatActivity() {
         getSystemService(Context.SENSOR_SERVICE) as SensorManager
     }
 
-    @UnstableDefault
     fun drawClick(view: View) {
         val on = (view as ToggleButton).isChecked
 
@@ -248,13 +269,35 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                val json = Json.stringify(Orientation.serializer().list, orientationSensor.readings.toList())
-                val url = resources.getString(R.string.draw_url)
+                val url = resources.getString(R.string.draw_url) + "/draw"
                 println(url)
                 Fuel.post(url)
-                        .jsonBody(json)
-                        .response { result ->
-                            println(result)
+                        .timeoutRead(60 * 1000)
+                        .jsonBody(orientationSensor.readings.json())
+                        .responseString { result ->
+                            result.fold({ json ->
+                                val imageResult = ImageResult.fromJson(json)
+                                imageResult?.let {
+                                    val bitmap = BitmapFactory.decodeByteArray(it.image, 0, it.image.size)
+                                    drawingCanvas.setBitmap(bitmap)
+
+                                    fun setView(textView: TextView, labelAnnotation: LabelAnnotation?) {
+                                        if (labelAnnotation != null) {
+                                            postGuess(textView, Pair(labelAnnotation.description, labelAnnotation.score))
+                                        }
+                                        else {
+                                            textView.text = ""
+                                        }
+                                    }
+
+                                    setView(bestGuess, it.labelAnnotations.getOrNull(0))
+                                    setView(secondGuess, it.labelAnnotations.getOrNull(1))
+                                    setView(thirdGuess, it.labelAnnotations.getOrNull(2))
+                                    setView(fourthGuess, it.labelAnnotations.getOrNull(3))
+                                }
+                            }, {
+                                println(it)
+                            })
                         }
 
                 orientationSensorMaybe = null

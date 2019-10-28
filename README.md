@@ -1,12 +1,12 @@
 # Air Draw
 
-[![Run on Google Cloud](https://storage.googleapis.com/cloudrun/button.png)](https://console.cloud.google.com/cloudshell/editor?shellonly=true&cloudshellboostmode=true&cloudshell_image=gcr.io/cloudrun/button&cloudshell_git_repo=https://github.com/GoogleCloudPlatform/air-draw-demo.git)
+<!--[![Run on Google Cloud](https://deploy.cloud.run/button.png)](https://deploy.cloud.run)-->
 
 ## Local Dev
 
 Run the server:
 ```
-./gradlew -t server:run
+./gradlew -t :server:run
 ```
 
 Visit: [http://localhost:8080](http://localhost:8080)
@@ -44,8 +44,15 @@ Run the client:
 
 1. Run on a device using an external server:
     ```
-    ./gradlew android:installDebug -PdrawUrl=https://YOUR_URL/draw
+    ./gradlew android:installDebug -PdrawUrl=YOUR_DRAW_SERVER_URL
     ```
+
+1. Or to run from Android Studio / IntelliJ, create a `gradle.properties` file in your root project directory containing:
+    ```
+   drawUrl=YOUR_DRAW_SERVER_URL
+    ```
+
+   And setup the activity to first run *Gradle-aware Make* with a task of `:android:assembleDebug`
 
 Use GCP for Pub/Sub & Vision API:
 

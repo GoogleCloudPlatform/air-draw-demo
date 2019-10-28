@@ -16,17 +16,24 @@
 function poll() {
 
   fetch("/events").then(res => {
-    if (res.ok) {
+    if (res.status === 200) {
       res.json().then(data => {
         document.body.style.backgroundImage = "url('data:image/png;base64," + data.image + "')";
 
-        document.body.innerText = data.labelAnnotations.reduce((acc, o) => {
-          return acc + "\n" + o.description + " = " + Math.round(o.score * 100) + "%";
-        }, "");
+        if (data.labelAnnotations !== undefined) {
+          document.body.innerText = data.labelAnnotations.reduce((acc, o) => {
+            return acc + "\n" + o.description + " = " + Math.round(o.score * 100) + "%";
+          }, "");
+        }
+        else {
+          document.body.innerText = "";
+        }
       });
     }
+
+    window.setTimeout(poll, 1000);
   });
 
 }
 
-window.setInterval(poll, 1000);
+poll();
