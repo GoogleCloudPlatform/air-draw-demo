@@ -7,6 +7,16 @@
     android:background="@android:color/darker_gray"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+    <Spinner
+        android:id="@+id/objectDetectionSpinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="160dp"
+        app:layout_constraintBaseline_toBaselineOf="@+id/cloudIdButton"
+        app:layout_constraintEnd_toStartOf="@+id/localIdButton"
+        app:layout_constraintStart_toStartOf="@+id/leftGuide"
+        app:layout_constraintTop_toTopOf="@+id/topGuide" />
 
     <Button
         android:id="@+id/localIdButton"
@@ -14,12 +24,11 @@
         android:layout_height="wrap_content"
         android:layout_margin="0dp"
         android:onClick="localLabelClick"
-        android:padding="8dp"
         android:text="Local ID"
         android:textSize="12sp"
+        app:layout_constraintBaseline_toBaselineOf="@+id/cloudIdButton"
         app:layout_constraintEnd_toStartOf="@+id/cloudIdButton"
-        app:layout_constraintStart_toStartOf="@+id/leftGuide"
-        app:layout_constraintTop_toTopOf="@+id/topGuide" />
+        app:layout_constraintStart_toEndOf="@+id/objectDetectionSpinner" />
 
     <Button
         android:id="@+id/cloudIdButton"
@@ -27,26 +36,24 @@
         android:layout_height="wrap_content"
         android:layout_margin="0dp"
         android:onClick="cloudLabelClick"
-        android:padding="8dp"
         android:text="Cloud ID"
         android:textSize="12sp"
-        app:layout_constraintEnd_toStartOf="@+id/sensorifyButton"
+        app:layout_constraintEnd_toStartOf="@+id/rightGuide"
         app:layout_constraintStart_toEndOf="@+id/localIdButton"
         app:layout_constraintTop_toTopOf="@+id/topGuide" />
 
     <ToggleButton
         android:id="@+id/sensorifyButton"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="0dp"
-        android:padding="8dp"
         android:textOff="Sensorify"
         android:textOn="Finish"
         android:textSize="12sp"
         android:onClick="drawClick"
-        app:layout_constraintStart_toEndOf="@+id/cloudIdButton"
+        app:layout_constraintStart_toEndOf="@+id/leftGuide"
         app:layout_constraintEnd_toEndOf="@+id/rightGuide"
-        app:layout_constraintTop_toTopOf="@+id/topGuide" />
+        app:layout_constraintTop_toBottomOf="@+id/cloudIdButton" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/leftGuide"
@@ -69,18 +76,6 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_begin="16dp" />
 
-    <com.jamesward.airdraw.DrawingCanvas
-        android:id="@+id/drawingCanvas"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="@android:color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="@id/rightGuide"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@id/leftGuide"
-        app:layout_constraintTop_toBottomOf="@+id/cloudIdButton" />
-
     <Button
         android:id="@+id/clearButton"
         android:layout_width="0dp"
@@ -97,12 +92,10 @@
         android:id="@+id/bestGuess"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textSize="24sp"
+        android:textSize="22sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/rightGuide"
         app:layout_constraintStart_toStartOf="@+id/leftGuide"
-        app:layout_constraintTop_toBottomOf="@+id/cloudIdButton" />
+        app:layout_constraintTop_toBottomOf="@+id/sensorifyButton" />
 
     <TextView
         android:id="@+id/secondGuess"
@@ -110,20 +103,17 @@
         android:layout_height="wrap_content"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/thirdGuess"
         app:layout_constraintStart_toEndOf="@+id/leftGuide"
-        app:layout_constraintTop_toTopOf="@+id/thirdGuess" />
+        app:layout_constraintTop_toBottomOf="@+id/bestGuess" />
 
     <TextView
         android:id="@+id/thirdGuess"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/fourthGuess"
-        app:layout_constraintStart_toEndOf="@+id/secondGuess"
-        app:layout_constraintTop_toBottomOf="@+id/bestGuess" />
+        app:layout_constraintStart_toEndOf="@+id/leftGuide"
+        app:layout_constraintTop_toBottomOf="@+id/secondGuess" />
 
     <TextView
         android:id="@+id/fourthGuess"
@@ -131,8 +121,20 @@
         android:layout_height="wrap_content"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/rightGuide"
-        app:layout_constraintStart_toEndOf="@+id/thirdGuess"
-        app:layout_constraintTop_toTopOf="@+id/thirdGuess" />
+        app:layout_constraintStart_toEndOf="@+id/leftGuide"
+        app:layout_constraintTop_toBottomOf="@+id/thirdGuess" />
+
+    <com.jamesward.airdraw.DrawingCanvas
+        android:id="@+id/drawingCanvas"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="8dp"
+        android:background="@android:color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="@id/rightGuide"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@id/leftGuide"
+        app:layout_constraintTop_toBottomOf="@+id/fourthGuess" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

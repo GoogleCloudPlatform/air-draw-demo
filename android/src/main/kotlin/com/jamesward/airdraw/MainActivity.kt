@@ -26,14 +26,14 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
-import android.widget.ToggleButton
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
+import com.google.android.gms.tasks.OnSuccessListener
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
+import com.google.firebase.ml.vision.label.FirebaseVisionImageLabel
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
 import org.tensorflow.lite.Interpreter
@@ -52,6 +52,9 @@ class MainActivity: AppCompatActivity() {
     lateinit var clearButton: Button
     lateinit var localLabel: Button
     lateinit var drawingCanvas: DrawingCanvas
+    lateinit var objectDetectionSpinner: Spinner
+
+    private var detectShapes = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +63,34 @@ class MainActivity: AppCompatActivity() {
         clearButton = findViewById(R.id.clearButton)
         drawingCanvas = findViewById(R.id.drawingCanvas)
         localLabel = findViewById(R.id.localIdButton)
+        objectDetectionSpinner = findViewById(R.id.objectDetectionSpinner)
+
+        setupSpinner()
 
         initializeInterpreter()
+    }
+
+    private fun setupSpinner() {
+        ArrayAdapter.createFromResource(this, R.array.objectDetectionChoices,
+                android.R.layout.simple_spinner_item
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            objectDetectionSpinner.adapter = adapter
+        }
+        objectDetectionSpinner.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                var itemString = parent?.getItemAtPosition(position)
+                println("itemString = $itemString")
+                if (itemString == "Shape") {
+                    detectShapes = true
+                } else {
+                    detectShapes = false
+                }
+            }
+        }
     }
 
     @Throws(IOException::class)
@@ -144,60 +173,76 @@ class MainActivity: AppCompatActivity() {
     fun localLabelClick(view: View) {
 
         val bitmap = drawingCanvas.getBitmap()
-        val digitData = checkDigit(bitmap)
-        val digitSequence = digitData[0].asSequence().mapIndexed {
-            index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending { it.second }.toList()
-        // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
-        // Then sort both arrays with custom comparator
-//        var digitDataMap = digitData[0].map {  }
-        for (result in digitSequence) {
-            println("${result.first}: ${result.second * 100}%")
-        }
-//        var digitDataSub: FloatArray = digitData[0]
-//        println("digitData = $digitData")
-//        var maxIndex = digitDataSub.indices.maxBy { digitDataSub[it] } ?: -1
-//        println("Best guess: $maxIndex, confidence = ${digitDataSub[maxIndex]}")
+        lateinit var digitSequence: List<Pair<String,Float>>
 
-        postGuess(bestGuess, digitSequence[0])
-        postGuess(secondGuess, digitSequence[1])
-        postGuess(thirdGuess, digitSequence[2])
-        postGuess(fourthGuess, digitSequence[3])
+        if (detectShapes) {
+            var firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
+            var labeler = FirebaseVision.getInstance().getOnDeviceImageLabeler()
+            labeler.processImage(firebaseImage).addOnSuccessListener { list ->
+                list.sortByDescending {
+                    it.confidence
+                }
+//                var labelSequence = list.asSequence().mapIndexed {
+//                    index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending {  }.toList()
 
-        val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
-
-        val buffer = ByteBuffer.allocate(bitmap.byteCount)
-        bitmap.copyPixelsToBuffer(buffer)
-
-        val byteArrayBitmapStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
-
-        val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
-
-        val url = resources.getString(R.string.draw_url) + "/show"
-        println(url)
-        Fuel.post(url)
-                .timeoutRead(60 * 1000)
-                .jsonBody(imageResult.json())
-                .response { result ->
-                    println(result)
+                for (item in list) {
+                    println("local labeled item text, id, confidence = ${item.text}, ${item.entityId}, ${item.confidence}")
                 }
 
+                if (list.size > 0) bestGuess.setText("${list[0].text}:  ${list[0].confidence}")
+                if (list.size > 1) secondGuess.setText("${list[1].text}:  ${list[1].confidence}")
+                if (list.size > 2) thirdGuess.setText("${list[2].text}:  ${list[2].confidence}")
+                if (list.size > 3) fourthGuess.setText("${list[3].text}:  ${list[3].confidence}")
+//                digitSequence = List<Pair<String, Float>>()
+            }
+        } else {
+            // digit detection
+            val digitData = checkDigit(bitmap)
+            digitSequence = digitData[0].asSequence().mapIndexed {
+                index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending { it.second }.toList()
+            // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
+            // Then sort both arrays with custom comparator
+//        var digitDataMap = digitData[0].map {  }
+            for (result in digitSequence) {
+                println("${result.first}: ${result.second * 100}%")
+            }
+            postGuess(bestGuess, digitSequence[0])
+            postGuess(secondGuess, digitSequence[1])
+            postGuess(thirdGuess, digitSequence[2])
+            postGuess(fourthGuess, digitSequence[3])
+            val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
 
-//        digitData.sort()
-//        digitData.forEach { digitResults ->
-//            for (i in 0 until digitResults.size) {
-//                println("$i: ${digitResults[i] * 10}%")
-//            }
-//        }
+            val buffer = ByteBuffer.allocate(bitmap.byteCount)
+            bitmap.copyPixelsToBuffer(buffer)
 
-//        var firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
-//        var labeler = FirebaseVision.getInstance().getOnDeviceImageLabeler()
-//        labeler.processImage(firebaseImage).addOnSuccessListener { list ->
-//            for (item in list) {
-//                println("local labeled item text, id, confidence = ${item.text}, ${item.entityId}, ${item.confidence}")
-//            }
-//        }
+            val byteArrayBitmapStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
+
+            val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
+
+            val url = resources.getString(R.string.draw_url) + "/show"
+            println(url)
+            Fuel.post(url)
+                    .timeoutRead(60 * 1000)
+                    .jsonBody(imageResult.json())
+                    .response { result ->
+                        println(result)
+                    }
+        }
     }
+
+    private fun displayDetectionResults(list: List<FirebaseVisionImageLabel>) {
+        if (list.size > 0) postGuess(bestGuess, list[0])
+        if (list.size > 1) postGuess(secondGuess, list[1])
+        if (list.size > 2) postGuess(thirdGuess, list[2])
+        if (list.size > 3) postGuess(fourthGuess, list[3])
+    }
+
+    private fun postGuess(textView: TextView, label: FirebaseVisionImageLabel) {
+        val value = label.confidence * 100
+        textView.text = "${label.text}:" + "   %3.2f%%".format(value)
+    }
+
 
     private fun postGuess(textView: TextView, guess: Pair<String, Float>) {
         val value = guess.second * 100
@@ -209,13 +254,10 @@ class MainActivity: AppCompatActivity() {
         val firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
         val labeler = FirebaseVision.getInstance().cloudImageLabeler
         labeler.processImage(firebaseImage).addOnSuccessListener { list ->
+            displayDetectionResults(list)
             for (item in list) {
                 println("cloud labeled item text, id, confidence = ${item.text}, ${item.entityId}, ${item.confidence}")
             }
-        }.addOnFailureListener {
-            println("FAILURE: $it")
-        }.addOnCanceledListener {
-            println("canceled!")
         }
     }
 

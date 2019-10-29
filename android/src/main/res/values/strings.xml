@@ -2,4 +2,8 @@
     <string name="app_name">Air Draw</string>
     <string name="draw_button_on">Identify It!</string>
     <string name="draw_button_off">Draw!</string>
+    <string-array name="objectDetectionChoices">
+        <item>Shape</item>
+        <item>Digit</item>
+    </string-array>
 </resources>
