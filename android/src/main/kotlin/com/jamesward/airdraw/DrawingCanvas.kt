@@ -9,8 +9,6 @@ import kotlinx.android.synthetic.main.activity_content.view.*
 
 class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr) {
 
-    var drawing: Boolean = false
-//    var previousPoint: PointF = PointF(0f,0f)
     val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val drawingPath = Path()
     private var cachedBitmap: Bitmap? = null
@@ -18,16 +16,17 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     init {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 70.0f
-        paint.color = Color.WHITE
+        paint.color = Color.BLACK
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
     }
 
     fun getBitmap():Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        println("bitmap 0,0 = " + Integer.toHexString(bitmap.getPixel(0, 0)))
         val canvas = Canvas(bitmap)
         draw(canvas)
-//        invalidate()
+        println("bitmap 0,0 = " + Integer.toHexString(bitmap.getPixel(0, 0)))
         return bitmap
     }
 
@@ -42,19 +41,15 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
         if (event != null) {
             when {
                 event.action == MotionEvent.ACTION_DOWN -> {
-                    drawing = true
-    //                previousPoint = PointF(event.x, event.y)
                     drawingPath.moveTo(event.x, event.y)
                     handled = true
                 }
                 event.action == MotionEvent.ACTION_MOVE -> {
-                    //todo: needed?  var newPoint = PointF(event.x, event.y)
                     drawingPath.lineTo(event.x, event.y)
                     invalidate()
                     handled = true
                 }
                 event.action == MotionEvent.ACTION_UP -> {
-                    drawing = false
                     handled = true
                 }
             }
@@ -69,9 +64,12 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     }
 
     override fun onDraw(canvas: Canvas?) {
-        if (cachedBitmap != null)
-            canvas!!.drawBitmap(cachedBitmap!!, 0f, 0f, null)
-        else
-            canvas!!.drawPath(drawingPath, paint)
+        canvas?.drawPath(drawingPath, paint)
+//        canvas?.let {
+//            if (cachedBitmap != null)
+//                it.drawBitmap(cachedBitmap!!, 0f, 0f, null)
+//            else
+//                it.drawPath(drawingPath, paint)
+//        }
     }
 }

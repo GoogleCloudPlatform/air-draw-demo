@@ -30,12 +30,12 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import com.google.firebase.ml.vision.label.FirebaseVisionImageLabel
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.*
 import org.tensorflow.lite.Interpreter
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
@@ -51,8 +51,14 @@ class MainActivity: AppCompatActivity() {
 
     lateinit var clearButton: Button
     lateinit var localLabel: Button
+    lateinit var cloudIdButton: Button
     lateinit var drawingCanvas: DrawingCanvas
     lateinit var objectDetectionSpinner: Spinner
+
+    private var inputImageWidth: Int = 0 // will be inferred from TF Lite model
+    private var inputImageHeight: Int = 0 // will be inferred from TF Lite model
+    private var modelInputSize: Int = 0 // will be inferred from TF Lite model
+    lateinit private var interpreter: Interpreter
 
     private var detectShapes = true
 
@@ -63,6 +69,7 @@ class MainActivity: AppCompatActivity() {
         clearButton = findViewById(R.id.clearButton)
         drawingCanvas = findViewById(R.id.drawingCanvas)
         localLabel = findViewById(R.id.localIdButton)
+        cloudIdButton = findViewById(R.id.cloudIdButton)
         objectDetectionSpinner = findViewById(R.id.objectDetectionSpinner)
 
         setupSpinner()
@@ -81,21 +88,18 @@ class MainActivity: AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?,
+                                        position: Int, id: Long) {
                 var itemString = parent?.getItemAtPosition(position)
-                println("itemString = $itemString")
-                if (itemString == "Shape") {
-                    detectShapes = true
-                } else {
-                    detectShapes = false
-                }
+                detectShapes = itemString == "Shape"
+                cloudIdButton.isEnabled = detectShapes
             }
         }
     }
 
     @Throws(IOException::class)
-    private fun loadModelFile(assetManager: AssetManager): ByteBuffer {
-        val fileDescriptor = assetManager.openFd("mnist.tflite")
+    private fun loadModelFile(): ByteBuffer {
+        val fileDescriptor = assets.openFd("mnist.tflite")
         val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
         val fileChannel = inputStream.channel
         val startOffset = fileDescriptor.startOffset
@@ -106,8 +110,7 @@ class MainActivity: AppCompatActivity() {
     @Throws(IOException::class)
     private fun initializeInterpreter() {
         // Load the TF Lite model
-        val assetManager = assets
-        val model = loadModelFile(assetManager)
+        val model = loadModelFile()
 
         // Initialize TF Lite Interpreter with NNAPI enabled
         val options = Interpreter.Options()
@@ -118,35 +121,57 @@ class MainActivity: AppCompatActivity() {
         val inputShape = interpreter.getInputTensor(0).shape()
         inputImageWidth = inputShape[1]
         inputImageHeight = inputShape[2]
-        modelInputSize = 4 * inputImageWidth * inputImageHeight * 1
+        modelInputSize = 4 * inputImageWidth * inputImageHeight
 
         // Finish interpreter initialization
         this.interpreter = interpreter
-//        isInitialized = true
-//        Log.d(TAG, "Initialized TFLite interpreter.")
     }
-
-    private var inputImageWidth: Int = 0 // will be inferred from TF Lite model
-    private var inputImageHeight: Int = 0 // will be inferred from TF Lite model
-    private var modelInputSize: Int = 0 // will be inferred from TF Lite model
-    lateinit private var interpreter: Interpreter
 
     fun clearClick(view: View) {
         drawingCanvas.clear()
-        bestGuess.text = ""
-        secondGuess.text = ""
-        thirdGuess.text = ""
-        fourthGuess.text = ""
+        clearGuesses()
     }
 
-    fun checkDigit(bitmap: Bitmap): Array<FloatArray> {
+    // TODO: Really need to run this off the main thread - coroutine?
+    suspend fun checkDigit(bitmap: Bitmap) {
+        lateinit var digitSequence: List<Pair<String,Float>>
         val resizedImage = Bitmap.createScaledBitmap(bitmap, inputImageWidth, inputImageHeight, true)
         val byteBuffer = convertBitmapToByteBuffer(resizedImage)
         val result = Array(1) { FloatArray(10) }
-        interpreter.run(byteBuffer, result)
-//        result.sort()
+        withContext(Dispatchers.IO) {
+            interpreter.run(byteBuffer, result)
+        }
 
-        return result
+        digitSequence = result[0].asSequence().mapIndexed {
+            index: Int, value: Float -> Pair(index.toString(), value) }.
+                sortedByDescending { it.second }.toList()
+        // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
+        // Then sort both arrays with custom comparator
+        for (result in digitSequence) {
+            println("${result.first}: ${result.second * 100}%")
+        }
+        postGuess(bestGuess, digitSequence[0])
+        postGuess(secondGuess, digitSequence[1])
+        postGuess(thirdGuess, digitSequence[2])
+        postGuess(fourthGuess, digitSequence[3])
+        val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
+
+        val buffer = ByteBuffer.allocate(bitmap.byteCount)
+        bitmap.copyPixelsToBuffer(buffer)
+
+        val byteArrayBitmapStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
+
+        val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
+
+        val url = resources.getString(R.string.draw_url) + "/show"
+        println(url)
+        Fuel.post(url)
+                .timeoutRead(60 * 1000)
+                .jsonBody(imageResult.json())
+                .response { result ->
+                    println(result)
+                }
     }
 
     private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
@@ -160,7 +185,6 @@ class MainActivity: AppCompatActivity() {
             val r = (pixelValue shr 16 and 0xFF)
             val g = (pixelValue shr 8 and 0xFF)
             val b = (pixelValue and 0xFF)
-//            println("RGB pixel = $r, $g, $b")
 
             // Convert RGB to grayscale and normalize pixel value to [0..1]
             val normalizedPixelValue = (r + g + b) / 3.0f / 255.0f
@@ -170,67 +194,48 @@ class MainActivity: AppCompatActivity() {
         return byteBuffer
     }
 
+    @ExperimentalCoroutinesApi
     fun localLabelClick(view: View) {
 
+        clearGuesses()
+
         val bitmap = drawingCanvas.getBitmap()
-        lateinit var digitSequence: List<Pair<String,Float>>
 
         if (detectShapes) {
-            var firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
-            var labeler = FirebaseVision.getInstance().getOnDeviceImageLabeler()
+            val firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
+            val labeler = FirebaseVision.getInstance().onDeviceImageLabeler
             labeler.processImage(firebaseImage).addOnSuccessListener { list ->
-                list.sortByDescending {
-                    it.confidence
-                }
-//                var labelSequence = list.asSequence().mapIndexed {
-//                    index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending {  }.toList()
 
-                for (item in list) {
-                    println("local labeled item text, id, confidence = ${item.text}, ${item.entityId}, ${item.confidence}")
+                if (list.size == 0) {
+                    bestGuess.setText("No Results")
+                } else {
+                    bestGuess.setText("${list[0].text}:  ${list[0].confidence}")
+                    if (list.size > 1) secondGuess.setText("${list[1].text}:  ${list[1].confidence}")
+                    if (list.size > 2) thirdGuess.setText("${list[2].text}:  ${list[2].confidence}")
+                    if (list.size > 3) fourthGuess.setText("${list[3].text}:  ${list[3].confidence}")
                 }
-
-                if (list.size > 0) bestGuess.setText("${list[0].text}:  ${list[0].confidence}")
-                if (list.size > 1) secondGuess.setText("${list[1].text}:  ${list[1].confidence}")
-                if (list.size > 2) thirdGuess.setText("${list[2].text}:  ${list[2].confidence}")
-                if (list.size > 3) fourthGuess.setText("${list[3].text}:  ${list[3].confidence}")
-//                digitSequence = List<Pair<String, Float>>()
             }
         } else {
             // digit detection
-            val digitData = checkDigit(bitmap)
-            digitSequence = digitData[0].asSequence().mapIndexed {
-                index: Int, value: Float -> Pair(index.toString(), value) }.sortedByDescending { it.second }.toList()
-            // From Tor: alternatively, could create second Array of indices to hold the sorted digits,
-            // Then sort both arrays with custom comparator
-//        var digitDataMap = digitData[0].map {  }
-            for (result in digitSequence) {
-                println("${result.first}: ${result.second * 100}%")
+//            val digitData = GlobalScope.launch(Dispatchers.Main) { checkDigit(bitmap) }
+//
+//            coroutineScope {
+//                launch {
+//                    // call get digit, hopefully on main thread
+//                }
+//            }
+            MainScope().launch {
+                checkDigit(bitmap)
             }
-            postGuess(bestGuess, digitSequence[0])
-            postGuess(secondGuess, digitSequence[1])
-            postGuess(thirdGuess, digitSequence[2])
-            postGuess(fourthGuess, digitSequence[3])
-            val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
-
-            val buffer = ByteBuffer.allocate(bitmap.byteCount)
-            bitmap.copyPixelsToBuffer(buffer)
-
-            val byteArrayBitmapStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
-
-            val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
-
-            val url = resources.getString(R.string.draw_url) + "/show"
-            println(url)
-            Fuel.post(url)
-                    .timeoutRead(60 * 1000)
-                    .jsonBody(imageResult.json())
-                    .response { result ->
-                        println(result)
-                    }
         }
     }
 
+    private fun clearGuesses() {
+        bestGuess.text = ""
+        secondGuess.text = ""
+        thirdGuess.text = ""
+        fourthGuess.text = ""
+    }
     private fun displayDetectionResults(list: List<FirebaseVisionImageLabel>) {
         if (list.size > 0) postGuess(bestGuess, list[0])
         if (list.size > 1) postGuess(secondGuess, list[1])
@@ -243,13 +248,14 @@ class MainActivity: AppCompatActivity() {
         textView.text = "${label.text}:" + "   %3.2f%%".format(value)
     }
 
-
     private fun postGuess(textView: TextView, guess: Pair<String, Float>) {
         val value = guess.second * 100
         textView.text = "${guess.first}:" + "   %3.2f%%".format(value)
     }
 
     fun cloudLabelClick(view: View) {
+        clearGuesses()
+
         val bitmap = drawingCanvas.getBitmap()
         val firebaseImage = FirebaseVisionImage.fromBitmap(bitmap)
         val labeler = FirebaseVision.getInstance().cloudImageLabeler
@@ -299,6 +305,8 @@ class MainActivity: AppCompatActivity() {
         val on = (view as ToggleButton).isChecked
 
         if (on) {
+            clearGuesses()
+
             orientationSensorMaybe = OrientationSensor()
 
             sensorManager.registerListener(
