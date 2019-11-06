@@ -15,7 +15,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
 
     init {
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 70.0f
+        paint.strokeWidth = 45.0f
         paint.color = Color.BLACK
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
@@ -42,6 +42,8 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
             when {
                 event.action == MotionEvent.ACTION_DOWN -> {
                     drawingPath.moveTo(event.x, event.y)
+                    drawingPath.lineTo(event.x, event.y)
+                    invalidate()
                     handled = true
                 }
                 event.action == MotionEvent.ACTION_MOVE -> {
