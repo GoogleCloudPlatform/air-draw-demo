@@ -64,12 +64,11 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     }
 
     override fun onDraw(canvas: Canvas?) {
-        canvas?.drawPath(drawingPath, paint)
-//        canvas?.let {
-//            if (cachedBitmap != null)
-//                it.drawBitmap(cachedBitmap!!, 0f, 0f, null)
-//            else
-//                it.drawPath(drawingPath, paint)
-//        }
+        canvas?.let {
+            if (cachedBitmap != null)
+                it.drawBitmap(cachedBitmap!!, 0f, 0f, null)
+            else
+                it.drawPath(drawingPath, paint)
+        }
     }
 }
