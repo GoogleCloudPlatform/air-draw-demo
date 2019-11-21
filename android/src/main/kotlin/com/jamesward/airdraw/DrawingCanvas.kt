@@ -15,7 +15,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
 
     init {
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 45.0f
+        paint.strokeWidth = 60.0f
         paint.color = Color.BLACK
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
@@ -23,10 +23,8 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
 
     fun getBitmap():Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        println("bitmap 0,0 = " + Integer.toHexString(bitmap.getPixel(0, 0)))
         val canvas = Canvas(bitmap)
         draw(canvas)
-        println("bitmap 0,0 = " + Integer.toHexString(bitmap.getPixel(0, 0)))
         return bitmap
     }
 
