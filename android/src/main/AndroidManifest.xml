@@ -28,6 +28,7 @@
             </intent-filter>
         </activity>
         <meta-data android:name="drawurl" android:value="${drawurl}"/>
+        <meta-data android:name="micronaut.http.client.read-timeout" android:value="30s"/>
     </application>
 
 </manifest>
