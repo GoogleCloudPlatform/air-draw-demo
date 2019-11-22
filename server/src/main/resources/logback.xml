@@ -5,7 +5,7 @@
         </encoder>
     </appender>
 
-    <logger name="io.micronaut.http.client" level="INFO"/>
+    <logger name="io.micronaut.http" level="INFO"/>
     <logger name="io.micronaut.context.condition" level="INFO"/>
 
     <root level="INFO">

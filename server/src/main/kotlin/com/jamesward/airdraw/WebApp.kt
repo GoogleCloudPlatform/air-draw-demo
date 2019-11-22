@@ -70,24 +70,22 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
 
     @View("index")
     @Get("/")
-    fun index(): Single<HttpResponse<String>> {
-        return Single.just(HttpResponse.ok(""))
+    fun index(): HttpResponse<Unit> {
+        return HttpResponse.ok()
     }
 
     @Post("/draw")
-    fun draw(@Body readingsSingle: Single<List<Orientation>>): Single<HttpResponse<String>> {
-        return readingsSingle.map { readings ->
-            airDraw.run(readings)?.let { imageResult ->
-                bus.put(imageResult)
-                HttpResponse.ok(imageResult.json())
-            }
+    fun draw(@Body readings: List<Orientation>): ImageResult? {
+        return airDraw.run(readings)?.let { imageResult ->
+            bus.put(imageResult)
+            return imageResult
         }
     }
 
     @Post("/show")
-    fun show(@Body imageResult: ImageResult): HttpResponse<String> {
+    fun show(@Body imageResult: ImageResult): HttpResponse<Unit> {
         bus.put(imageResult)
-        return HttpResponse.ok("")
+        return HttpResponse.noContent()
     }
 
     @Get("/events")

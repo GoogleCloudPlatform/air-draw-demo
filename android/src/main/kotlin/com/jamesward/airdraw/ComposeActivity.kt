@@ -15,6 +15,7 @@ import androidx.ui.material.ButtonStyle
 import androidx.ui.material.MaterialTheme
 import androidx.ui.material.RadioGroup
 import androidx.ui.tooling.preview.Preview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 lateinit var machineLearningStuff: MachineLearningStuff
 
@@ -25,8 +26,7 @@ class ComposeActivity : AppCompatActivity() {
         setContent {
             BuildUI()
         }
-        machineLearningStuff = MachineLearningStuff(assets, this,
-                resources.getString(R.string.draw_url))
+        machineLearningStuff = MachineLearningStuff(assets, this)
     }
 }
 
@@ -41,6 +41,7 @@ private val path = Path()
 private var bitmap: Bitmap? = null
 private var sensorifying = false
 
+@UseExperimental(ExperimentalCoroutinesApi::class)
 @Composable
 fun BuildUI() {
     MaterialTheme() {
@@ -60,7 +61,7 @@ fun BuildUI() {
                         Button(text = "Local", onClick = {
                             machineLearningStuff.localDetection(true, bitmap!!,
                                     selectedOption == "Shape") {
-                                println("results = " + MachineLearningStuff.resultsList)
+                                println("results = " + it.toString())
                             }
                         })
                         if (selectedOption == "Shape") {
@@ -77,7 +78,7 @@ fun BuildUI() {
                 val on = sensorifying
                 invalidate
                 machineLearningStuff.sensorAction(on) {
-                    println("results = " + MachineLearningStuff.resultsList)
+                    println("results = " + it.toString())
                 }
             }, style = ButtonStyle(if (sensorifying) Color.Gray else Color.Green,
                     shape = RectangleShape))
@@ -120,7 +121,7 @@ fun DrawingCanvas(path: Path) {
                     bitmap = Bitmap.createBitmap(parentSize.width.value.toInt(),
                             parentSize.height.value.toInt(), Bitmap.Config.ARGB_8888)
                 }
-                var bitmapCanvas = android.graphics.Canvas(bitmap!!)
+                val bitmapCanvas = android.graphics.Canvas(bitmap!!)
                 bitmapCanvas.drawPath(path.toFrameworkPath(), fingerPaint.asFrameworkPaint())
             }
         }

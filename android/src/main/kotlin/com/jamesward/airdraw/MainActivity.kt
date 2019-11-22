@@ -15,19 +15,45 @@
  */
 package com.jamesward.airdraw
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.label.FirebaseVisionImageLabel
+import com.jamesward.airdraw.data.ImageResult
+import com.jamesward.airdraw.data.LabelAnnotation
+import com.jamesward.airdraw.data.Orientation
+import io.micronaut.context.annotation.Prototype
+import io.micronaut.context.annotation.Value
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.client.annotation.Client
+import io.reactivex.Single
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import javax.inject.Inject
 
+@Client("\${drawurl}")
+interface DrawService {
+    @Post("/show")
+    fun show(@Body imageResult: ImageResult): Single<Unit>
 
+    @Post("/draw")
+    fun draw(@Body readings: List<Orientation>): Single<ImageResult>
+}
+
+@Prototype
 class MainActivity: AppCompatActivity() {
+
+    @Inject
+    var drawService: DrawService? = null
+
+    @Value("\${drawurl}")
+    var drawUrl: String? = null
 
     lateinit var clearButton: Button
     lateinit var localLabel: Button
@@ -50,8 +76,7 @@ class MainActivity: AppCompatActivity() {
 
         setupSpinner()
 
-        machineLearningStuff = MachineLearningStuff(assets, this,
-                resources.getString(R.string.draw_url))
+        machineLearningStuff = MachineLearningStuff(assets, this)
     }
 
     private fun setupSpinner() {
@@ -67,7 +92,7 @@ class MainActivity: AppCompatActivity() {
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?,
                                         position: Int, id: Long) {
-                var itemString = parent?.getItemAtPosition(position)
+                val itemString = parent?.getItemAtPosition(position)
                 detectShapes = itemString == "Shape"
                 cloudIdButton.isEnabled = detectShapes
             }
@@ -81,14 +106,11 @@ class MainActivity: AppCompatActivity() {
 
     @ExperimentalCoroutinesApi
     fun localLabelClick(view: View) {
-
         clearGuesses()
 
         val bitmap = drawingCanvas.getBitmap()
 
-        machineLearningStuff.localDetection(true, bitmap, detectShapes) {
-            displayResults()
-        }
+        machineLearningStuff.localDetection(true, bitmap, detectShapes, displayResult(bitmap))
     }
 
     private fun clearGuesses() {
@@ -98,52 +120,66 @@ class MainActivity: AppCompatActivity() {
         fourthGuess.text = ""
     }
 
-    private fun displayDetectionResults(list: List<FirebaseVisionImageLabel>) {
-        if (list.size > 0) postGuess(bestGuess, list[0])
-        if (list.size > 1) postGuess(secondGuess, list[1])
-        if (list.size > 2) postGuess(thirdGuess, list[2])
-        if (list.size > 3) postGuess(fourthGuess, list[3])
-    }
-
-    private fun postGuess(textView: TextView, label: FirebaseVisionImageLabel) {
-        val value = label.confidence * 100
-        textView.text = "${label.text}:" + "   %3.2f%%".format(value)
-    }
-
+    @ExperimentalCoroutinesApi
     fun cloudLabelClick(view: View) {
         clearGuesses()
 
         val bitmap = drawingCanvas.getBitmap()
 
-        machineLearningStuff.localDetection(false, bitmap, detectShapes) {
-            displayResults()
-        }
+        machineLearningStuff.localDetection(false, bitmap, detectShapes, displayResult(bitmap))
     }
 
     fun drawClick(view: View) {
         val on = (view as ToggleButton).isChecked
 
-        machineLearningStuff.sensorAction(on) {
-            displayResults()
-        }
-
-    }
-
-    private fun displayResults() {
-        if (MachineLearningStuff.resultsList.size == 0) {
-            bestGuess.setText("No Results")
-        }
-        drawingCanvas.setBitmap(MachineLearningStuff.resultsBitmap)
-
-        for ((index, result) in MachineLearningStuff.resultsList.withIndex()) {
-            when (index) {
-                0 -> bestGuess.setText("${result.text}: ${result.confidence}")
-                1 -> secondGuess.setText("${result.text}: ${result.confidence}")
-                2 -> thirdGuess.setText("${result.text}: ${result.confidence}")
-                3 -> fourthGuess.setText("${result.text}: ${result.confidence}")
+        machineLearningStuff.sensorAction(on) { orientations ->
+            val imageResultMaybe = drawService?.draw(orientations)?.blockingGet()
+            imageResultMaybe?.let { imageResult ->
+                displayResults(imageResult)
             }
         }
     }
 
-}
+    private fun displayResult(bitmap: Bitmap): (List<LabelAnnotation>) -> Unit {
 
+        val buffer = ByteBuffer.allocate(bitmap.byteCount)
+        bitmap.copyPixelsToBuffer(buffer)
+
+        val byteArrayBitmapStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayBitmapStream)
+
+        return { labelAnnotations: List<LabelAnnotation> ->
+            val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
+
+            displayResults(imageResult)
+
+            drawService?.show(imageResult)?.subscribe()?.dispose()
+        }
+    }
+
+    private fun displayResults(imageResult: ImageResult) {
+        if (imageResult.labelAnnotations.isEmpty()) {
+            bestGuess.text = "No Results"
+        }
+
+        val bitmap = BitmapFactory.decodeByteArray(imageResult.image, 0, imageResult.image.size)
+
+        drawingCanvas.setBitmap(bitmap)
+
+        fun setGuess(i: Int, guess: TextView) {
+            imageResult.labelAnnotations.getOrNull(i).let { result ->
+                if (result != null) {
+                    guess.text = "${result.description}: ${result.score}"
+                } else {
+                    guess.text = ""
+                }
+            }
+        }
+
+        setGuess(0, bestGuess)
+        setGuess(1, secondGuess)
+        setGuess(2, thirdGuess)
+        setGuess(3, fourthGuess)
+    }
+
+}

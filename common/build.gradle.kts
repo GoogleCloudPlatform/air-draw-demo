@@ -1,12 +1,9 @@
 plugins {
     kotlin("jvm")
-    id("kotlinx-serialization") version KotlinVersion.CURRENT.toString()
 }
 
 dependencies {
     compile(kotlin("stdlib"))
-
-    compile("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.13.0")
 }
 
 java {
