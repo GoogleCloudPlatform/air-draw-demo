@@ -17,7 +17,7 @@ package com.jamesward.airdraw
 
 import com.jamesward.airdraw.data.*
 import android.content.Context
-import android.content.res.AssetManager
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.Sensor
@@ -28,11 +28,15 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.github.kittinunf.fuel.Fuel
-import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.google.firebase.ml.vision.FirebaseVision
 import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import com.google.firebase.ml.vision.label.FirebaseVisionImageLabel
+import io.micronaut.context.annotation.Prototype
+import io.micronaut.context.annotation.Value
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.client.annotation.Client
+import io.reactivex.Single
 import kotlinx.android.synthetic.main.activity_content.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -43,9 +47,26 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel
+import javax.inject.Inject
 
 
+@Client("\${drawurl}")
+interface DrawService {
+    @Post("/show")
+    fun show(@Body imageResult: ImageResult): Single<Unit>
+
+    @Post("/draw")
+    fun draw(@Body readings: List<Orientation>): Single<ImageResult>
+}
+
+@Prototype
 class MainActivity: AppCompatActivity() {
+
+    @Inject
+    var drawService: DrawService? = null
+
+    @Value("\${drawurl}")
+    var drawUrl: String? = null
 
     private var orientationSensorMaybe: OrientationSensor? = null
 
@@ -64,6 +85,9 @@ class MainActivity: AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        println("drawurl = ${drawUrl}")
+
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
         clearButton = findViewById(R.id.clearButton)
@@ -164,14 +188,7 @@ class MainActivity: AppCompatActivity() {
 
         val imageResult = ImageResult(byteArrayBitmapStream.toByteArray(), labelAnnotations)
 
-        val url = resources.getString(R.string.draw_url) + "/show"
-        println(url)
-        Fuel.post(url)
-                .timeoutRead(60 * 1000)
-                .jsonBody(imageResult.json())
-                .response { result ->
-                    println(result)
-                }
+        drawService?.show(imageResult)?.subscribe()?.dispose()
     }
 
     private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
@@ -319,36 +336,27 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                val url = resources.getString(R.string.draw_url) + "/draw"
-                println(url)
-                Fuel.post(url)
-                        .timeoutRead(60 * 1000)
-                        .jsonBody(orientationSensor.readings.json())
-                        .responseString { result ->
-                            result.fold({ json ->
-                                val imageResult = ImageResult.fromJson(json)
-                                imageResult?.let {
-                                    val bitmap = BitmapFactory.decodeByteArray(it.image, 0, it.image.size)
-                                    drawingCanvas.setBitmap(bitmap)
+                // todo: not a blockingget, maybe suspend fun?
+                val imageResultMaybe = drawService?.draw(orientationSensor.readings)?.blockingGet()
 
-                                    fun setView(textView: TextView, labelAnnotation: LabelAnnotation?) {
-                                        if (labelAnnotation != null) {
-                                            postGuess(textView, Pair(labelAnnotation.description, labelAnnotation.score))
-                                        }
-                                        else {
-                                            textView.text = ""
-                                        }
-                                    }
+                imageResultMaybe?.let { imageResult ->
+                    val bitmap = BitmapFactory.decodeByteArray(imageResult.image, 0, imageResult.image.size)
+                    drawingCanvas.setBitmap(bitmap)
 
-                                    setView(bestGuess, it.labelAnnotations.getOrNull(0))
-                                    setView(secondGuess, it.labelAnnotations.getOrNull(1))
-                                    setView(thirdGuess, it.labelAnnotations.getOrNull(2))
-                                    setView(fourthGuess, it.labelAnnotations.getOrNull(3))
-                                }
-                            }, {
-                                println(it)
-                            })
+                    fun setView(textView: TextView, labelAnnotation: LabelAnnotation?) {
+                        if (labelAnnotation != null) {
+                            postGuess(textView, Pair(labelAnnotation.description, labelAnnotation.score))
                         }
+                        else {
+                            textView.text = ""
+                        }
+                    }
+
+                    setView(bestGuess, imageResult.labelAnnotations.getOrNull(0))
+                    setView(secondGuess, imageResult.labelAnnotations.getOrNull(1))
+                    setView(thirdGuess, imageResult.labelAnnotations.getOrNull(2))
+                    setView(fourthGuess, imageResult.labelAnnotations.getOrNull(3))
+                }
 
                 orientationSensorMaybe = null
             }

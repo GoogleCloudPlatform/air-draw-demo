@@ -4,26 +4,32 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
-    id("com.google.gms.google-services") version ("4.3.2")
+    kotlin("kapt")
+    id("com.google.gms.google-services") version ("4.3.3")
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
     implementation("androidx.appcompat:appcompat:1.1.0")
-    implementation("com.google.android.material:material:1.2.0-alpha01")
+    implementation("com.google.android.material:material:1.2.0-alpha02")
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta3")
 
-    implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
-
     implementation(project(":common"))
-    implementation("com.google.firebase:firebase-ml-vision:24.0.0")
+
+    implementation("com.google.firebase:firebase-ml-vision:24.0.1")
     implementation("com.google.firebase:firebase-ml-vision-image-label-model:19.0.0")
 
     implementation("org.tensorflow:tensorflow-lite:1.13.1")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.1")
+
+    implementation("io.micronaut:micronaut-http-client:1.2.6")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
+    implementation("uk.uuid.slf4j:slf4j-android:1.7.28-0")
+
+    kapt("io.micronaut:micronaut-inject-java:1.2.6")
 }
 
 googleServices {
@@ -36,20 +42,18 @@ android {
 
     defaultConfig {
         applicationId = "com.jamesward.airdraw"
-        minSdkVersion(23)
+        minSdkVersion(24)
         targetSdkVersion(28)
         versionCode = 1
         versionName = "1.0"
 
         val drawUrl: String? by project
         if (drawUrl != null) {
-            val usesCleartextTraffic = if (drawUrl!!.startsWith("https")) "false" else "true"
-            manifestPlaceholders = mapOf("usesCleartextTraffic" to usesCleartextTraffic)
-            resValue("string", "draw_url", drawUrl!!)
+            manifestPlaceholders = mapOf("drawurl" to drawUrl)
         }
         else {
-            manifestPlaceholders = mapOf("usesCleartextTraffic" to "true")
-            resValue("string", "draw_url", "http://10.0.2.2:8080")
+            // 10.0.2.2 is the IP for your machine from the Android emulator
+            manifestPlaceholders = mapOf("drawurl" to "http://10.0.2.2:8080")
         }
     }
 
@@ -69,7 +73,17 @@ android {
         noCompress("tflite")
     }
 
+    lintOptions {
+        lintOptions {
+            warning("InvalidPackage")
+        }
+    }
+
     packagingOptions {
         exclude("META-INF/main.kotlin_module")
+        exclude("META-INF/INDEX.LIST")
+        exclude("META-INF/spring-configuration-metadata.json")
+        exclude("META-INF/config-properties.adoc")
+        exclude("META-INF/io.netty.versions.properties")
     }
 }

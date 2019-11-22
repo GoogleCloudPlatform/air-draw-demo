@@ -101,3 +101,8 @@ gcloud services enable run.googleapis.com
 gcloud builds submit --tag=gcr.io/$(gcloud config get-value project)/air-draw
 gcloud beta run deploy air-draw --image gcr.io/$(gcloud config get-value project)/air-draw --allow-unauthenticated --memory=512Mi
 ```
+
+## TODO
+
+- KotlinJS
+- JetPack Compose

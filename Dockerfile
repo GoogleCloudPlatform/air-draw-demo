@@ -7,7 +7,7 @@ RUN ./gradlew --no-daemon --console=plain :server:shadowJar
 
 FROM adoptopenjdk/openjdk8:jre
 
-COPY --from=builder /app/server/build/libs/server.jar /server.jar
+COPY --from=builder /app/server/build/libs/server-all.jar /server.jar
 
 RUN apt-get update && apt-get install -y --no-install-recommends fontconfig
 
