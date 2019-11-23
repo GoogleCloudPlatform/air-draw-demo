@@ -14,6 +14,11 @@ dependencies {
     implementation("com.google.android.material:material:1.2.0-alpha01")
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta3")
 
+    implementation("androidx.core:core-ktx:1.1.0")
+    implementation("androidx.ui:ui-layout:0.1.0-dev02")
+    implementation("androidx.ui:ui-material:0.1.0-dev02")
+    implementation("androidx.ui:ui-tooling:0.1.0-dev02")
+
     implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
 
     implementation(project(":common"))
@@ -31,13 +36,13 @@ googleServices {
 }
 
 android {
-    compileSdkVersion(28)
+    compileSdkVersion(29)
     buildToolsVersion = "28.0.3"
 
     defaultConfig {
         applicationId = "com.jamesward.airdraw"
-        minSdkVersion(23)
-        targetSdkVersion(28)
+        minSdkVersion(21)
+        targetSdkVersion(29)
         versionCode = 1
         versionName = "1.0"
 
