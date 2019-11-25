@@ -18,6 +18,7 @@ buildscript {
 
 allprojects {
     repositories {
+//        maven (url = "https://ci.android.com/builds/submitted/6029545/androidx_snapshot/latest/ui/repository/")
         mavenLocal()
         mavenCentral()
         jcenter()

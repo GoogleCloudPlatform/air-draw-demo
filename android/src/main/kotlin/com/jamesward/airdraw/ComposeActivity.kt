@@ -1,20 +1,17 @@
 package com.jamesward.airdraw
 
-import androidx.ui.graphics.Path
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.*
 import androidx.ui.core.*
 import androidx.ui.core.gesture.DragObserver
 import androidx.ui.core.gesture.RawDragGestureDetector
-import androidx.ui.graphics.Color
-import androidx.ui.graphics.Paint
-import androidx.ui.graphics.PaintingStyle
-import androidx.ui.layout.Column
-import androidx.ui.layout.Container
-import androidx.ui.layout.Row
+import androidx.ui.graphics.*
+import androidx.ui.layout.*
 import androidx.ui.material.Button
+import androidx.ui.material.ButtonStyle
 import androidx.ui.material.MaterialTheme
+import androidx.ui.material.RadioGroup
 import androidx.ui.tooling.preview.Preview
 
 class ComposeActivity : AppCompatActivity() {
@@ -29,22 +26,40 @@ class ComposeActivity : AppCompatActivity() {
 private val fingerPaint = Paint().apply {
     color = Color.Black
     style = PaintingStyle.stroke
-    strokeWidth = 5f
+    strokeWidth = 60f
+    strokeJoin = StrokeJoin.round
+    strokeCap = StrokeCap.round
 }
 private val path = Path()
 
 @Composable
 fun BuildUI() {
     MaterialTheme() {
-        Column() {
-            Row() {
-                Button(text = "Thing 1")
-                Button(text = "Thing 2")
-                Button(text = "Thing 3")
+        Column(crossAxisAlignment = CrossAxisAlignment.Stretch) {
+            Row(mainAxisAlignment = MainAxisAlignment.Center,
+                    mainAxisSize = LayoutSize.Expand,
+                    crossAxisSize = LayoutSize.Expand) {
+                val radioOptions = listOf("Shape", "Digit")
+                val (selectedOption, onOptionSelected) = +state { radioOptions[0] }
+                RadioGroup(
+                        options = radioOptions,
+                        selectedOption = selectedOption,
+                        onSelectedChange = onOptionSelected
+                )
+                Column (mainAxisSize = LayoutSize.Expand) {
+                    Button(text = "Local")
+                    if (selectedOption == "Shape") {
+                        Button(text = "Cloud")
+                    }
+                }
             }
-            Button(text = "Thing thing 4")
+            Button(text = "Sensorify")
             DrawingCanvas(path)
-            Button(text = "Thing thing 5")
+            Center {
+                Button(text = "Clear", onClick = {
+                    path.reset()
+                })
+            }
         }
     }
 }
@@ -70,7 +85,7 @@ class MyDragObserver(val dragPath: Path, val recompose: () -> Unit): DragObserve
 fun DrawingCanvas(path: Path) {
     val invalidate = +invalidate
     RawDragGestureDetector(dragObserver = MyDragObserver(path, invalidate)) {
-        Container(width = 200.dp, height = 200.dp) {
+        Container(modifier = ExpandedHeight, width = 200.dp, height = 200.dp) {
             Draw { canvas, parentSize ->
                 canvas.drawPath(path, fingerPaint)
             }

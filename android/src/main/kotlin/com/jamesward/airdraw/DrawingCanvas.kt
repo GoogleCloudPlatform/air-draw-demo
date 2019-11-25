@@ -28,7 +28,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
         return bitmap
     }
 
-    fun setBitmap(bitmap: Bitmap) {
+    fun setBitmap(bitmap: Bitmap?) {
         cachedBitmap = bitmap
         invalidate()
     }

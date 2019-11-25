@@ -15,6 +15,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta3")
 
     implementation("androidx.core:core-ktx:1.1.0")
+//    implementation("androidx.ui:ui-framework:0.1.0-SNAPSHOT")
     implementation("androidx.ui:ui-layout:0.1.0-dev02")
     implementation("androidx.ui:ui-material:0.1.0-dev02")
     implementation("androidx.ui:ui-tooling:0.1.0-dev02")
@@ -77,4 +78,7 @@ android {
     packagingOptions {
         exclude("META-INF/main.kotlin_module")
     }
+}
+repositories {
+    google()
 }
