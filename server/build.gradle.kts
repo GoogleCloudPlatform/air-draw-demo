@@ -7,11 +7,24 @@ plugins {
     id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
+/*
+sourceSets {
+    main {
+        resources {
+            srcDir(project(":web").file("build/classes/kotlin/main"))
+        }
+    }
+}
+ */
+
 dependencies {
     compile(kotlin("stdlib"))
     compile(kotlin("reflect"))
 
     compile(project(":common"))
+
+    //runtime(project(":web"))
+    runtimeOnly(files("../web/build/libs/web.jar"))
 
     compile("com.github.haifengl:smile-plot:1.5.3")
     compile("com.github.haifengl:smile-interpolation:1.5.3")
@@ -30,6 +43,12 @@ dependencies {
     runtime("org.thymeleaf:thymeleaf:3.0.11.RELEASE")
 
     kapt("io.micronaut:micronaut-inject-java:1.2.6")
+}
+
+tasks {
+    classes {
+        dependsOn(":web:jar")
+    }
 }
 
 java {

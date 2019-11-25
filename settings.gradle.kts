@@ -2,9 +2,9 @@ rootProject.name = "air-draw"
 
 // when running the root jib task, ignore the android subproject
 if (startParameter.taskRequests.find { it.args.contains(":server:shadowJar") } == null) {
-    include("common", "android", "server")
+    include("common", "android", "web", "server")
 } else {
-    include("common", "server")
+    include("common", "web", "server")
 }
 
 pluginManagement {
