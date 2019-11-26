@@ -1,39 +1,29 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
+import org.jetbrains.kotlin.config.KotlinCompilerVersion
 
 plugins {
-    id("com.android.application")
-    kotlin("android")
-    kotlin("android.extensions")
-    kotlin("kapt")
-    id("com.google.gms.google-services") version ("4.3.3")
+    id("com.android.application") version "3.4.0"
+    kotlin("android") version "1.3.30"
+    kotlin("android.extensions") version "1.3.30"
+    kotlin("kapt") version "1.3.30"
+    id("kotlinx-serialization") version "1.3.30"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    google()
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib-jdk8", KotlinCompilerVersion.VERSION))
+    implementation(kotlin("reflect", KotlinCompilerVersion.VERSION))
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.0")
 
-    implementation("androidx.appcompat:appcompat:1.1.0")
-    implementation("com.google.android.material:material:1.2.0-alpha02")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta3")
+    implementation("com.android.support:appcompat-v7:28.0.0")
+    implementation("com.android.support:design:28.0.0")
 
-    implementation(project(":common"))
-
-    implementation("com.google.firebase:firebase-ml-vision:24.0.1")
-    implementation("com.google.firebase:firebase-ml-vision-image-label-model:19.0.0")
-
-    implementation("org.tensorflow:tensorflow-lite:1.13.1")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.1")
-
-    implementation("io.micronaut:micronaut-http-client:1.2.6")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
-    implementation("uk.uuid.slf4j:slf4j-android:1.7.28-0")
-
-    kapt("io.micronaut:micronaut-inject-java:1.2.6")
-}
-
-googleServices {
-    disableVersionCheck = true
+    implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
 }
 
 android {
@@ -42,35 +32,15 @@ android {
 
     defaultConfig {
         applicationId = "com.jamesward.airdraw"
-        minSdkVersion(24)
+        minSdkVersion(23)
         targetSdkVersion(28)
         versionCode = 1
         versionName = "1.0"
-
-        val drawUrl: String? by project
-        if (drawUrl != null) {
-            manifestPlaceholders = mapOf("drawurl" to drawUrl)
-        }
-        else {
-            // 10.0.2.2 is the IP for your machine from the Android emulator
-            manifestPlaceholders = mapOf("drawurl" to "http://10.0.2.2:8080")
-        }
     }
-
-    sourceSets["main"].java.srcDir("src/main/kotlin")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        this as KotlinJvmOptions
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
-    }
-
-    aaptOptions {
-        noCompress("tflite")
     }
 
     lintOptions {
@@ -81,9 +51,5 @@ android {
 
     packagingOptions {
         exclude("META-INF/main.kotlin_module")
-        exclude("META-INF/INDEX.LIST")
-        exclude("META-INF/spring-configuration-metadata.json")
-        exclude("META-INF/config-properties.adoc")
-        exclude("META-INF/io.netty.versions.properties")
     }
 }
