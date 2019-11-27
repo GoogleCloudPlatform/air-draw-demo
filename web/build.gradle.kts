@@ -5,13 +5,15 @@ plugins {
 
 dependencies {
     compile(kotlin("stdlib-js"))
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.2")
+    compile("org.jetbrains.kotlinx:kotlinx-html-js:0.6.12")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile> {
     kotlinOptions {
         metaInfo = false
         //noStdlib = false
-        //sourceMap = true
+        sourceMap = true
         //moduleKind = "umd" //"commonjs" //"amd" //"umd"
         //main = "call"
         outputFile = "$buildDir/classes/kotlin/main/${project.name}.js"
