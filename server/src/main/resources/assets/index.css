@@ -37,3 +37,8 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+p {
+    margin-block-start: 0;
+    margin-block-end: 0;
+}
