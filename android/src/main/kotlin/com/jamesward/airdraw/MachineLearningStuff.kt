@@ -93,10 +93,12 @@ class MachineLearningStuff(val assets: AssetManager, activity: Activity, val ser
             labeler.processImage(firebaseImage).addOnSuccessListener { list ->
 
                 resultsList.clear()
+                val labelAnnotations = resultsList.map { LabelAnnotation(it.text, it.confidence) }
                 for (item in list) {
                     resultsList.add(ResultsItem(item.text, item.confidence))
                 }
                 resultsListener()
+                uploadResults(labelAnnotations, bitmap)
             }
         } else {
             if (local) {
@@ -131,6 +133,10 @@ class MachineLearningStuff(val assets: AssetManager, activity: Activity, val ser
         resultsBitmap = null
         resultsListener()
         val labelAnnotations = digitSequence.map { LabelAnnotation(it.first.toString(), it.second) }
+        uploadResults(labelAnnotations, bitmap)
+    }
+
+    private fun uploadResults(labelAnnotations: List<LabelAnnotation>, bitmap: Bitmap) {
 
         val buffer = ByteBuffer.allocate(bitmap.byteCount)
         bitmap.copyPixelsToBuffer(buffer)
