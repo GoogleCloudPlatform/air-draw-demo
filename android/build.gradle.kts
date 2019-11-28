@@ -49,7 +49,7 @@ android {
     defaultConfig {
         applicationId = "com.jamesward.airdraw"
         minSdkVersion(24)
-        targetSdkVersion(28)
+        targetSdkVersion(29)
         versionCode = 1
         versionName = "1.0"
 

@@ -16,16 +16,16 @@
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
-        </activity>
-        <activity
-            android:name=".ComposeActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".ComposeActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
         </activity>
         <meta-data android:name="drawurl" android:value="${drawurl}"/>
         <meta-data android:name="micronaut.http.client.read-timeout" android:value="30s"/>
