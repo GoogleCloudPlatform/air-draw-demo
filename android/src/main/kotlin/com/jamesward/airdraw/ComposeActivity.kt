@@ -7,6 +7,7 @@ import androidx.compose.*
 import androidx.ui.core.*
 import androidx.ui.core.gesture.DragObserver
 import androidx.ui.core.gesture.RawDragGestureDetector
+import androidx.ui.foundation.shape.RectangleShape
 import androidx.ui.graphics.*
 import androidx.ui.layout.*
 import androidx.ui.material.Button
@@ -38,6 +39,7 @@ private val fingerPaint = Paint().apply {
 }
 private val path = Path()
 private var bitmap: Bitmap? = null
+private var sensorifying = false
 
 @Composable
 fun BuildUI() {
@@ -69,7 +71,16 @@ fun BuildUI() {
                 }
             }
             HeightSpacer(16.dp)
-            Button(text = "Sensorify")
+            println("sensorifying = $sensorifying")
+            Button(text = "Sensorify", onClick = {
+                sensorifying = !sensorifying
+                val on = sensorifying
+                invalidate
+                machineLearningStuff.sensorAction(on) {
+                    println("results = " + MachineLearningStuff.resultsList)
+                }
+            }, style = ButtonStyle(if (sensorifying) Color.Gray else Color.Green,
+                    shape = RectangleShape))
             DrawingCanvas(path)
             Center {
                 Button(text = "Clear", onClick = {
