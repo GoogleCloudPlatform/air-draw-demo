@@ -1,12 +1,15 @@
 plugins {
     //id("kotlin2js")
-    id("kotlin-platform-js")
+    kotlin("js")
+    //id("kotlin-platform-js").version("1.3.61")
 }
 
 dependencies {
-    compile(kotlin("stdlib-js"))
-    compile("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.2")
-    compile("org.jetbrains.kotlinx:kotlinx-html-js:0.6.12")
+    implementation(kotlin("stdlib-js"))
+    implementation(project(":common"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.6.12")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:0.14.0")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile> {
@@ -21,23 +24,24 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile> {
 }
 
 task<Copy>("assembleJsLib") {
-    configurations.compile.get().resolve().forEach { file ->
-        from(zipTree(file.absolutePath)) {
-            includeEmptyDirs = false
-            include { fileTreeElement ->
-                val path = fileTreeElement.path
-                (path.endsWith(".js") || path.endsWith(".js.map")) && (path.startsWith("META-INF/resources/") || !path.startsWith("META-INF/"))
+    from(provider {
+        configurations["runtimeClasspath"].map {
+            zipTree(it).matching {
+                include { fileTreeElement ->
+                    val path = fileTreeElement.path
+                    (path.endsWith(".js") || path.endsWith(".js.map")) && (path.startsWith("META-INF/resources/") || !path.startsWith("META-INF/"))
+                }
             }
         }
-    }
-    from(tasks.withType<ProcessResources>().map { it.destinationDir })
+    })
+
     into("$buildDir/classes/kotlin/main")
 
-    dependsOn("classes")
+    dependsOn("mainClasses")
 }
 
 tasks {
-    jar {
+    JsJar {
         into("META-INF/resources")
         dependsOn("assembleJsLib")
     }

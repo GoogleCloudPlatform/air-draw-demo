@@ -32,8 +32,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2")
 
     implementation("io.micronaut:micronaut-http-client:1.2.6")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
-    implementation("uk.uuid.slf4j:slf4j-android:1.7.28-0")
+
+    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
+    api("uk.uuid.slf4j:slf4j-android:1.7.28-0")
 
     kapt("io.micronaut:micronaut-inject-java:1.2.6")
 }

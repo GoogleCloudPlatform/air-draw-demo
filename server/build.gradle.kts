@@ -18,37 +18,35 @@ sourceSets {
  */
 
 dependencies {
-    compile(kotlin("stdlib"))
-    compile(kotlin("reflect"))
+    implementation(kotlin("stdlib"))
+    api(kotlin("reflect"))
 
-    compile(project(":common"))
+    api(project(":common"))
 
-    //runtime(project(":web"))
-    runtimeOnly(files("../web/build/libs/web.jar"))
+    //api(project(":web"))
+    api(files("../web/build/libs/web.jar"))
 
-    compile("com.github.haifengl:smile-plot:1.5.3")
-    compile("com.github.haifengl:smile-interpolation:1.5.3")
-    compile("com.github.haifengl:smile-netlib:1.5.3")
+    implementation("com.github.haifengl:smile-plot:1.5.3")
+    implementation("com.github.haifengl:smile-interpolation:1.5.3")
+    implementation("com.github.haifengl:smile-netlib:1.5.3")
 
-    compile("io.micronaut:micronaut-runtime:1.2.6")
-    compile("io.micronaut:micronaut-http-server-netty:1.2.6")
-    compile("io.micronaut:micronaut-views:1.2.0")
-    compile("ch.qos.logback:logback-classic:1.2.3")
+    implementation("io.micronaut:micronaut-runtime:1.2.6")
+    implementation("io.micronaut:micronaut-http-server-netty:1.2.6")
+    implementation("io.micronaut:micronaut-views:1.2.0")
+    api("ch.qos.logback:logback-classic:1.2.3")
 
-    compile("com.google.cloud:google-cloud-vision:1.99.0")
-    compile("com.google.cloud:google-cloud-pubsub:1.101.0")
-    compile("io.netty:netty-tcnative-boringssl-static:2.0.27.Final")
+    implementation("com.google.cloud:google-cloud-vision:1.99.0")
+    implementation("com.google.cloud:google-cloud-pubsub:1.101.0")
+    api("io.netty:netty-tcnative-boringssl-static:2.0.27.Final")
 
-    runtime("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
-    runtime("org.thymeleaf:thymeleaf:3.0.11.RELEASE")
+    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
+    api("org.thymeleaf:thymeleaf:3.0.11.RELEASE")
 
     kapt("io.micronaut:micronaut-inject-java:1.2.6")
 }
 
-tasks {
-    classes {
-        dependsOn(":web:jar")
-    }
+tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithKotlincTask> {
+    dependsOn(":web:JsJar")
 }
 
 java {
