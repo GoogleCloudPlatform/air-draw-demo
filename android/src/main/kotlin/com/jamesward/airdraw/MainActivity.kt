@@ -158,13 +158,15 @@ class MainActivity: AppCompatActivity() {
     }
 
     private fun displayResults(imageResult: ImageResult) {
-        if (imageResult.labelAnnotations.isEmpty()) {
-            bestGuess.text = "No Results"
-        }
 
         val bitmap = BitmapFactory.decodeByteArray(imageResult.image, 0, imageResult.image.size)
 
         drawingCanvas.setBitmap(bitmap)
+
+        if (imageResult.labelAnnotations.isEmpty()) {
+            bestGuess.text = "No Results"
+            return
+        }
 
         fun setGuess(i: Int, guess: TextView) {
             imageResult.labelAnnotations.getOrNull(i).let { result ->
