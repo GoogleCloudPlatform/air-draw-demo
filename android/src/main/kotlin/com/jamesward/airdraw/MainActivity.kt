@@ -15,9 +15,12 @@
  */
 package com.jamesward.airdraw
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -77,6 +80,20 @@ class MainActivity: AppCompatActivity() {
         setupSpinner()
 
         machineLearningStuff = MachineLearningStuff(assets, this)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        getMenuInflater().inflate(R.menu.menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.composeItem) {
+            val intent = Intent(this, ComposeActivity::class.java)
+            startActivity(intent)
+            return true
+        }
+        return false
     }
 
     private fun setupSpinner() {
