@@ -90,7 +90,6 @@ fun BuildUI(guesses: Guesses = Guesses()) {
                     }
                 }
             }
-            println("sensorifying = $sensorifying")
             Button(text = "Sensorify", onClick = {
                 sensorifying = !sensorifying
                 val on = sensorifying

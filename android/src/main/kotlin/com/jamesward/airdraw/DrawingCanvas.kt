@@ -16,7 +16,7 @@ class DrawingCanvas(context: Context?, attr: AttributeSet) : View(context, attr)
     init {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 60.0f
-        paint.color = Color.BLACK
+        paint.color = Color.WHITE
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
     }

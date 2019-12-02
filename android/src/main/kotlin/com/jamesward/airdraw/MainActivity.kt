@@ -188,7 +188,7 @@ class MainActivity: AppCompatActivity() {
         fun setGuess(i: Int, guess: TextView) {
             imageResult.labelAnnotations.getOrNull(i).let { result ->
                 if (result != null) {
-                    guess.text = "${result.description}: ${result.score}"
+                    guess.text = "${result.description}: " + "   %3.2f%%".format(result.score * 100)
                 } else {
                     guess.text = ""
                 }
