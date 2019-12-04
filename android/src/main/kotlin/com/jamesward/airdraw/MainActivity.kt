@@ -70,14 +70,7 @@ class MainActivity: AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
-        clearButton = findViewById(R.id.clearButton)
         drawingCanvas = findViewById(R.id.drawingCanvas)
-        localLabel = findViewById(R.id.localIdButton)
-        cloudIdButton = findViewById(R.id.cloudIdButton)
-        objectDetectionSpinner = findViewById(R.id.objectDetectionSpinner)
-
-        setupSpinner()
 
         machineLearningStuff = MachineLearningStuff(assets, this)
     }

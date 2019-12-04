@@ -7,49 +7,14 @@
     android:background="@android:color/darker_gray"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <Spinner
-        android:id="@+id/objectDetectionSpinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="160dp"
-        app:layout_constraintBaseline_toBaselineOf="@+id/cloudIdButton"
-        app:layout_constraintEnd_toStartOf="@+id/localIdButton"
-        app:layout_constraintStart_toStartOf="@+id/leftGuide"
-        app:layout_constraintTop_toTopOf="@+id/topGuide" />
-
-    <Button
-        android:id="@+id/localIdButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="0dp"
-        android:onClick="localLabelClick"
-        android:text="Local ID"
-        android:textSize="12sp"
-        app:layout_constraintBaseline_toBaselineOf="@+id/cloudIdButton"
-        app:layout_constraintEnd_toStartOf="@+id/cloudIdButton"
-        app:layout_constraintStart_toEndOf="@+id/objectDetectionSpinner" />
-
-    <Button
-        android:id="@+id/cloudIdButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="0dp"
-        android:onClick="cloudLabelClick"
-        android:text="Cloud ID"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toStartOf="@+id/rightGuide"
-        app:layout_constraintStart_toEndOf="@+id/localIdButton"
-        app:layout_constraintTop_toTopOf="@+id/topGuide" />
-
     <ToggleButton
         android:id="@+id/sensorifyButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="0dp"
-        android:textOff="Sensorify"
+        android:textOff="Draw"
         android:textOn="Finish"
-        android:textSize="12sp"
+        android:textSize="48sp"
         android:onClick="drawClick"
         app:layout_constraintStart_toEndOf="@+id/leftGuide"
         app:layout_constraintEnd_toEndOf="@+id/rightGuide"
@@ -75,18 +40,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintGuide_begin="0dp" />
-
-    <Button
-        android:id="@+id/clearButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:onClick="clearClick"
-        android:text="Clear"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/rightGuide"
-        app:layout_constraintStart_toStartOf="@+id/leftGuide"
-        app:layout_constraintTop_toBottomOf="@+id/drawingCanvas" />
 
     <TextView
         android:id="@+id/bestGuess"

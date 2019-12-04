@@ -34,7 +34,6 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.jackson.serialize.JacksonObjectSerializer
 import io.micronaut.runtime.Micronaut
 import io.micronaut.views.View
-import io.reactivex.Single
 import smile.interpolation.Interpolation
 import smile.interpolation.KrigingInterpolation1D
 import smile.plot.Headless
@@ -142,10 +141,10 @@ interface CloudBusConfig {
         get() = ServiceOptions.getDefaultProjectId()
 
     val topic: String
-        get() = "air-draw"
+        get() = "air-draw-demo"
 
-    val subsciption: String
-        get() = "air-draw"
+    val subscription: String
+        get() = "air-draw-demo"
 }
 
 @Singleton
@@ -163,7 +162,7 @@ class CloudBus(cloudBusConfig: CloudBusConfig, private val objectSerializer: Jac
     val topicName = ProjectTopicName.of(cloudBusConfig.projectId, cloudBusConfig.topic)
     val publisher = Publisher.newBuilder(topicName).build()
 
-    val subscriptionName = ProjectSubscriptionName.format(cloudBusConfig.projectId, cloudBusConfig.subsciption)
+    val subscriptionName = ProjectSubscriptionName.format(cloudBusConfig.projectId, cloudBusConfig.subscription)
 
     val subscriberStubSettings = SubscriberStubSettings.newBuilder()
             .setTransportChannelProvider(SubscriberStubSettings.defaultGrpcTransportProviderBuilder().build())
