@@ -9,8 +9,7 @@ plugins {
 }
 
 dependencies {
-//    implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.60-eap-25")
+    implementation(kotlin("stdlib-jdk8"))
 
     implementation("androidx.appcompat:appcompat:1.1.0")
     implementation("com.google.android.material:material:1.2.0-alpha02")
@@ -29,8 +28,8 @@ dependencies {
 
     implementation("org.tensorflow:tensorflow-lite:1.13.1")
 
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2")
 
     implementation("io.micronaut:micronaut-http-client:1.2.6")
 

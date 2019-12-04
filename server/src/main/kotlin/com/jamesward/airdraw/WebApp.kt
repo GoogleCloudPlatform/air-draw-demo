@@ -301,9 +301,30 @@ object AirDrawSmileViewer {
     }
 
     fun draw(readings: List<Orientation>): PlotCanvas {
-        val t = readings.map { it.timestamp.toDouble() }.toDoubleArray()
-        val x = readings.map { it.azimuth.toDouble() }.toDoubleArray()
-        val y = readings.map { it.pitch.toDouble() * -1 }.toDoubleArray()
+        // deal with crossing over the north pole
+        // from the east, north approaches pi; from the west, north approaches -pi
+
+        val maxAzimuth = readings.maxBy{ it.azimuth }?.azimuth ?: 0f
+        val minAzimuth = readings.minBy{ it.azimuth }?.azimuth ?: 0f
+
+        val correctedReadings = if (maxAzimuth > 2 && minAzimuth < -2) {
+            readings.map {
+                val newAzimuth = if (it.azimuth < 0) {
+                    it.azimuth + Math.PI.toFloat()
+                }
+                else {
+                    it.azimuth - Math.PI.toFloat()
+                }
+                it.copy(azimuth = newAzimuth)
+            }
+        }
+        else {
+            readings
+        }
+
+        val t = correctedReadings.map { it.timestamp.toDouble() }.toDoubleArray()
+        val x = correctedReadings.map { it.azimuth.toDouble() }.toDoubleArray()
+        val y = correctedReadings.map { it.pitch.toDouble() * -1 }.toDoubleArray()
 
         val xl = KrigingInterpolation1D(t, x)
 
@@ -314,8 +335,8 @@ object AirDrawSmileViewer {
             Interpolation { it }
         }
 
-        val minTimestamp = readings.minBy { it.timestamp }!!.timestamp
-        val maxTimestamp = readings.maxBy { it.timestamp }!!.timestamp
+        val minTimestamp = correctedReadings.minBy { it.timestamp }!!.timestamp
+        val maxTimestamp = correctedReadings.maxBy { it.timestamp }!!.timestamp
         val time = maxTimestamp - minTimestamp
 
         val xy: Array<DoubleArray> = (minTimestamp..maxTimestamp step(time / 100)).map { timestamp ->

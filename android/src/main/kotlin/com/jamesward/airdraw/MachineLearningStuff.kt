@@ -150,23 +150,14 @@ class OrientationSensor: SensorEventListener {
         event?.let { e ->
             val rotationMatrix = FloatArray(9)
             SensorManager.getRotationMatrixFromVector(rotationMatrix, e.values)
+
             val orientationAngles = FloatArray(3)
             SensorManager.getOrientation(rotationMatrix, orientationAngles)
-            // the azimuth goes from -PI to PI potentially causing orientations to "cross over" from -PI to PI
-            // to avoid this we convert negative readings to positive resulting in a range 0 to PI*2
 
-            val absAzimuth = if (orientationAngles[0] < 0)
-                orientationAngles[0] + (Math.PI.toFloat() * 2)
-            else
-                orientationAngles[0]
-
-            val pitch = if (orientationAngles[1].isNaN())
-                0f
-            else
-                orientationAngles[1]
-
-            val orientation = Orientation(absAzimuth, pitch, e.timestamp)
-            readings.add(orientation)
+            if (!orientationAngles[1].isNaN()) {
+                val orientation = Orientation(orientationAngles[0], orientationAngles[1], e.timestamp)
+                readings.add(orientation)
+            }
         }
     }
 
