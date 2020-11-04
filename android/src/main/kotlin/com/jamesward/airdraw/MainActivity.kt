@@ -15,22 +15,33 @@
  */
 package com.jamesward.airdraw
 
-import com.jamesward.airdraw.data.*
+
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.ToggleButton
-import com.github.kittinunf.fuel.Fuel
-import com.github.kittinunf.fuel.core.extensions.jsonBody
-import kotlinx.android.synthetic.main.activity_main.*
-
+import androidx.appcompat.app.AppCompatActivity
+import com.jamesward.airdraw.data.ImageResult
+import com.jamesward.airdraw.data.Orientation
+import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.client.annotation.Client
+import io.reactivex.Single
+import javax.inject.Inject
 
 class MainActivity: AppCompatActivity() {
+
+    @Inject
+    var drawService: DrawService? = null
+
+    @Value("\${drawurl}")
+    var drawUrl: String? = null
 
     private var orientationSensorMaybe: OrientationSensor? = null
 
@@ -47,11 +58,18 @@ class MainActivity: AppCompatActivity() {
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 // the azimuth goes from -PI to PI potentially causing orientations to "cross over" from -PI to PI
                 // to avoid this we convert negative readings to positive resulting in a range 0 to PI*2
+
                 val absAzimuth = if (orientationAngles[0] < 0)
                     orientationAngles[0] + (Math.PI.toFloat() * 2)
                 else
                     orientationAngles[0]
-                val orientation = Orientation(absAzimuth, orientationAngles[1], e.timestamp)
+
+                val pitch = if (orientationAngles[1].isNaN())
+                    0f
+                else
+                    orientationAngles[1]
+
+                val orientation = Orientation(absAzimuth, pitch, e.timestamp)
                 readings.add(orientation)
             }
         }
@@ -64,7 +82,8 @@ class MainActivity: AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
+
+        println("drawurl = ${drawUrl}")
     }
 
     fun drawClick(view: View) {
@@ -83,13 +102,7 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                val url = resources.getString(R.string.draw_url)
-                println(url)
-                Fuel.post(url)
-                        .jsonBody(orientationSensor.readings.json())
-                        .response { result ->
-                            println(result)
-                        }
+                drawService?.draw(orientationSensor.readings)?.blockingGet()
 
                 orientationSensorMaybe = null
             }
@@ -98,3 +111,11 @@ class MainActivity: AppCompatActivity() {
 
 }
 
+@Client("\${drawurl}")
+interface DrawService {
+    @Post("/show")
+    fun show(@Body imageResult: ImageResult): Single<Unit>
+
+    @Post("/draw")
+    fun draw(@Body readings: List<Orientation>): Single<HttpResponse<Unit>>
+}

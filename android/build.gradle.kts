@@ -1,19 +1,20 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
-
 plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
+    kotlin("kapt")
 }
 
 dependencies {
-    //implementation(kotlin("stdlib"))
+    implementation(kotlin("reflect"))
     implementation(project(":common"))
+    implementation("androidx.appcompat:appcompat:1.2.0")
 
-    implementation("com.android.support:appcompat-v7:28.0.0")
-    implementation("com.android.support:design:28.0.0")
+    implementation("io.micronaut:micronaut-http-client:2.1.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.3")
+    implementation("uk.uuid.slf4j:slf4j-android:1.7.28-0")
 
-    implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
+    kapt("io.micronaut:micronaut-inject-java:2.1.2")
 }
 
 android {
@@ -29,13 +30,11 @@ android {
 
         val drawUrl: String? by project
         if (drawUrl != null) {
-            val usesCleartextTraffic = if (drawUrl!!.startsWith("https")) "false" else "true"
-            manifestPlaceholders = mapOf("usesCleartextTraffic" to usesCleartextTraffic)
-            resValue("string", "draw_url", drawUrl!!)
+            manifestPlaceholders = mapOf("drawurl" to drawUrl)
         }
         else {
-            manifestPlaceholders = mapOf("usesCleartextTraffic" to "true")
-            resValue("string", "draw_url", "http://10.0.2.2:8080/draw")
+            // 10.0.2.2 is the IP for your machine from the Android emulator
+            manifestPlaceholders = mapOf("drawurl" to "http://10.0.2.2:8080")
         }
     }
 
@@ -52,6 +51,10 @@ android {
 
     packagingOptions {
         exclude("META-INF/main.kotlin_module")
+        exclude("META-INF/INDEX.LIST")
+        exclude("META-INF/config-properties.adoc")
+        exclude("META-INF/io.netty.versions.properties")
+        exclude("META-INF/spring-configuration-metadata.json")
     }
 
     lintOptions {

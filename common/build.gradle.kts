@@ -1,5 +1,13 @@
+/*
+When using the android artifact, the android project fails with:
+Execution failed for task ':android:processDebugResources'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.Workers$ActionFacade
+   > AAPT2 aapt2-4.1.0-6503028-linux Daemon #0: Unexpected error during link, attempting to stop daemon.
+     This should not happen under normal circumstances, please file an issue if it does.
+ */
+
 plugins {
-    //id("com.android.application") version "4.1.0"
+    //id("com.android.application")// version "4.1.0"
     kotlin("multiplatform")
     //id("com.android.library") version "4.1.0"
     //id("kotlin-android-extensions")
@@ -44,11 +52,23 @@ dependencies {
 }
  */
 
+/*
+android {
+    compileSdkVersion(30)
+    //buildToolsVersion = "30.0.2"
+}
+ */
+
 kotlin {
     // note: you can't have both jvm & android
-    jvm {
+    jvm()
+    /*
+    {
         withJava()
     }
+     */
+
+    //android()
 
     js {
         browser {
