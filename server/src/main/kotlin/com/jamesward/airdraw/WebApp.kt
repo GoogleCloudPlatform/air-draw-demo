@@ -56,7 +56,7 @@ import kotlin.math.abs
 
 
 fun main() {
-    Micronaut.build().packages("com.jamesward.airdraw").mainClass(WebApp::class.java).start()
+    Micronaut.build().packages("com.jamesward.airdraw").start()
 }
 
 fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
@@ -70,8 +70,8 @@ class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
 
     @View("index")
     @Get("/")
-    fun index(): Single<HttpResponse<String>> {
-        return Single.just(HttpResponse.ok(""))
+    fun index(): HttpResponse<String> {
+        return HttpResponse.ok("")
     }
 
     @Post("/draw")
@@ -200,7 +200,7 @@ class CloudBus(cloudBusConfig: CloudBusConfig, private val objectSerializer: Jac
 
             subscriber.acknowledgeCallable().call(acknowledgeRequest)
 
-            objectSerializer.deserialize<ImageResult>(receivedMessage.message.data.toByteArray(), ImageResult::class.java).get()
+            objectSerializer.deserialize(receivedMessage.message.data.toByteArray(), ImageResult::class.java).get()
         }
     }
 
@@ -219,10 +219,12 @@ class LocalBus: Bus {
     private val queue = ArrayBlockingQueue<ImageResult>(256)
 
     override fun put(imageResult: ImageResult) {
+        println("put")
         queue.add(imageResult)
     }
 
     override fun take(): ImageResult? {
+        println("take")
         val maybe = queue.firstOrNull()
         if (maybe != null)
             queue.remove(maybe)
@@ -297,8 +299,8 @@ object AirDrawSmileViewer {
         val xl = KrigingInterpolation1D(t, x)
         val yl = KrigingInterpolation1D(t, y)
 
-        val minTimestamp = readings.minBy { it.timestamp }!!.timestamp
-        val maxTimestamp = readings.maxBy { it.timestamp }!!.timestamp
+        val minTimestamp = readings.minByOrNull { it.timestamp }!!.timestamp
+        val maxTimestamp = readings.maxByOrNull { it.timestamp }!!.timestamp
         val time = maxTimestamp - minTimestamp
 
         val xy: Array<DoubleArray> = (minTimestamp..maxTimestamp step(time / 100)).map { timestamp ->
@@ -310,8 +312,8 @@ object AirDrawSmileViewer {
         val yBounds = doubleArrayOf(-0.5, 1.5)
         val defaultXWidth = 2
 
-        val minX = xy.minBy { it[0] }!![0]
-        val maxX = xy.maxBy { it[0] }!![0]
+        val minX = xy.minByOrNull { it[0] }!![0]
+        val maxX = xy.maxByOrNull { it[0] }!![0]
 
         val width = abs(minX) + abs(maxX)
         val xBounds = if (width < defaultXWidth) {

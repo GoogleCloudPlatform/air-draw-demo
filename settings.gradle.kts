@@ -2,7 +2,7 @@ rootProject.name = "air-draw"
 
 // when running the root jib task, ignore the android subproject
 if (startParameter.taskRequests.find { it.args.contains(":server:jib") } == null) {
-    include("common", "android", "server")
+    include("common", "server", "android")
 } else {
     include("common", "server")
 }
@@ -15,7 +15,7 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == "com.android.application") {
+            if (requested.id.namespace == "com.android" || requested.id.name == "kotlin-android-extensions") {
                 useModule("com.android.tools.build:gradle:${requested.version}")
             }
             if (requested.id.id == "kotlinx-serialization") {

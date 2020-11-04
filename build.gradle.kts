@@ -1,14 +1,10 @@
-buildscript {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        jcenter()
-        google()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:3.5.1")
-        classpath(kotlin("gradle-plugin", "1.3.50"))
-    }
+plugins {
+    id("com.android.application") version "4.0.0" apply false
+    kotlin("android") version "1.4.10" apply false
+    kotlin("jvm") version "1.4.10" apply false
+    kotlin("multiplatform") version "1.4.10" apply false
+    kotlin("plugin.allopen") version "1.4.10" apply false
+    kotlin("plugin.serialization") version "1.4.10" apply false
 }
 
 allprojects {

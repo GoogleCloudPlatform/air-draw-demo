@@ -2,34 +2,35 @@ plugins {
     application
     kotlin("jvm")
     kotlin("kapt")
-    id("com.google.cloud.tools.jib") version "1.7.0"
+    kotlin("plugin.allopen")
+    id("com.google.cloud.tools.jib") version "2.6.0"
 }
 
 dependencies {
-    compile(kotlin("stdlib"))
-    compile(kotlin("reflect"))
+    //implementation(kotlin("stdlib-jdk8"))
+    //implementation(kotlin("reflect"))
+    //compile(kotlin("reflect"))
 
-    compile(project(":common"))
+    implementation(project(":common"))
 
-    compile("com.github.haifengl:smile-plot:1.5.2")
-    compile("com.github.haifengl:smile-interpolation:1.5.3")
-    compile("com.github.haifengl:smile-netlib:1.5.3")
+    implementation("com.github.haifengl:smile-plot:1.5.2")
+    implementation("com.github.haifengl:smile-interpolation:1.5.3")
+    implementation("com.github.haifengl:smile-netlib:1.5.3")
 
-    compile("io.micronaut:micronaut-runtime:1.2.5")
-    compile("io.micronaut:micronaut-http-client:1.2.5")
-    compile("io.micronaut:micronaut-http-server-netty:1.2.5")
-    compile("io.micronaut:micronaut-views:1.2.0")
-    compile("ch.qos.logback:logback-classic:1.2.3")
+    implementation("io.micronaut.kotlin:micronaut-kotlin-runtime:2.1.1")
+    implementation("io.micronaut:micronaut-runtime:2.1.2")
+    implementation("io.micronaut:micronaut-http-server-netty:2.1.2")
+    implementation("io.micronaut.views:micronaut-views-thymeleaf:2.0.1")
 
-    compile("com.google.cloud:google-cloud-vision:1.97.0")
-    compile("com.google.cloud:google-cloud-pubsub:1.97.0")
-    compile("io.netty:netty-tcnative-boringssl-static:2.0.20.Final")
+    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.3")
+    runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
 
-    runtime("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.0")
-    runtime("org.thymeleaf:thymeleaf:3.0.11.RELEASE")
+    implementation("com.google.cloud:google-cloud-vision:1.100.6")
+    implementation("com.google.cloud:google-cloud-pubsub:1.108.7")
+    implementation("com.google.cloud:google-cloud-core:1.93.10")
+    implementation("io.netty:netty-tcnative-boringssl-static:2.0.20.Final")
 
-    kapt("io.micronaut:micronaut-inject-java:1.2.5")
-    kapt("io.micronaut:micronaut-validation:1.2.5")
+    kapt("io.micronaut:micronaut-inject-java:2.1.2")
 }
 
 java {
@@ -44,11 +45,28 @@ tasks.compileKotlin {
 }
 
 application {
-    mainClassName = "com.jamesward.airdraw.WebAppKt"
+    mainClass.set("com.jamesward.airdraw.WebAppKt")
 }
 
-jib {
-    container {
-        mainClass = application.mainClassName
+allOpen {
+    annotation("io.micronaut.aop.Around")
+}
+
+kapt {
+    arguments {
+        arg("micronaut.processing.incremental", true)
+        arg("micronaut.processing.annotations", "com.jamesward.airdraw.*")
+    }
+}
+
+tasks.withType<JavaExec> {
+    jvmArgs = listOf("-XX:TieredStopAtLevel=1", "-Dcom.sun.management.jmxremote")
+
+    if (gradle.startParameter.isContinuous) {
+        systemProperties = mapOf(
+                "micronaut.io.watch.restart" to "true",
+                "micronaut.io.watch.enabled" to "true",
+                "micronaut.io.watch.paths" to "src/main"
+        )
     }
 }

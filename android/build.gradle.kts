@@ -7,24 +7,23 @@ plugins {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    //implementation(kotlin("stdlib"))
+    implementation(project(":common"))
 
     implementation("com.android.support:appcompat-v7:28.0.0")
     implementation("com.android.support:design:28.0.0")
 
     implementation("com.github.kittinunf.fuel:fuel-android:2.0.1")
-
-    implementation(project(":common"))
 }
 
 android {
-    compileSdkVersion(28)
-    buildToolsVersion = "28.0.3"
+    compileSdkVersion(30)
+    buildToolsVersion = "30.0.2"
 
     defaultConfig {
         applicationId = "com.jamesward.airdraw"
         minSdkVersion(23)
-        targetSdkVersion(28)
+        targetSdkVersion(30)
         versionCode = 1
         versionName = "1.0"
 
@@ -48,11 +47,14 @@ android {
     }
 
     kotlinOptions {
-        this as KotlinJvmOptions
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
     packagingOptions {
         exclude("META-INF/main.kotlin_module")
+    }
+
+    lintOptions {
+        isAbortOnError = false
     }
 }

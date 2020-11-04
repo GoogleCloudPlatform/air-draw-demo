@@ -21,7 +21,7 @@ Run the client:
     cd android-sdk
     unzip PATH_TO_SDK_ZIP/sdk-tools-linux-VERSION.zip
     tools/bin/sdkmanager --update
-    tools/bin/sdkmanager "platforms;android-28" "build-tools;28.0.3" "extras;google;m2repository" "extras;android;m2repository"
+    tools/bin/sdkmanager "platforms;android-30" "build-tools;30.0.2" "extras;google;m2repository" "extras;android;m2repository"
     tools/bin/sdkmanager --licenses
     ```
 
@@ -37,7 +37,7 @@ Run the client:
 
 1. Run the build from this project's dir:
     ```
-    ./gradlew android:build
+    ./gradlew :android:build
     ```
 
 1. For a physical device, [setup adb](https://developer.android.com/studio/run/device)
