@@ -8,6 +8,8 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    //implementation(project(":web"))
+    //runtimeOnly(files("../web/build/libs/web.jar"))
 
     implementation("com.github.haifengl:smile-plot:1.5.2")
     implementation("com.github.haifengl:smile-interpolation:1.5.3")
@@ -66,3 +68,11 @@ tasks.withType<JavaExec> {
         )
     }
 }
+
+/*
+tasks {
+    classes {
+        dependsOn(":web:jsJar")
+    }
+}
+ */

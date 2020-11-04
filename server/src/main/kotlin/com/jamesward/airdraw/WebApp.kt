@@ -264,7 +264,7 @@ class CloudAirDraw(private val vision: Vision): AirDraw {
         val bytes = outputStream.toByteArray()
 
         return vision.label(bytes)?.let { annotateImageResponse ->
-            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation())
+            ImageResult(bytes, annotateImageResponse.labelAnnotationsList.toLabelAnnotation().toTypedArray())
         }
     }
 }

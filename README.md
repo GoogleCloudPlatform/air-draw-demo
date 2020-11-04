@@ -4,7 +4,12 @@
 
 ## Local Dev
 
-Run the server:
+Run the web asset ser:
+```
+./gradlew -t :web:run
+```
+
+Run the web server:
 ```
 ./gradlew -t :server:run
 ```
