@@ -219,12 +219,10 @@ class LocalBus: Bus {
     private val queue = ArrayBlockingQueue<ImageResult>(256)
 
     override fun put(imageResult: ImageResult) {
-        println("put")
         queue.add(imageResult)
     }
 
     override fun take(): ImageResult? {
-        println("take")
         val maybe = queue.firstOrNull()
         if (maybe != null)
             queue.remove(maybe)

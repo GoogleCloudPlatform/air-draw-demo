@@ -7,10 +7,6 @@ plugins {
 }
 
 dependencies {
-    //implementation(kotlin("stdlib-jdk8"))
-    //implementation(kotlin("reflect"))
-    //compile(kotlin("reflect"))
-
     implementation(project(":common"))
 
     implementation("com.github.haifengl:smile-plot:1.5.2")
