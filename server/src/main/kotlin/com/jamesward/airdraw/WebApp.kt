@@ -27,15 +27,17 @@ import com.google.pubsub.v1.*
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.env.Environment
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.jackson.serialize.JacksonObjectSerializer
 import io.micronaut.runtime.Micronaut
-import io.micronaut.views.View
 import io.reactivex.Maybe
 import io.reactivex.Single
+import kotlinx.html.dom.*
+import kotlinx.html.*
 import smile.interpolation.KrigingInterpolation1D
 import smile.plot.Headless
 import smile.plot.LinePlot
@@ -68,10 +70,24 @@ fun List<EntityAnnotation>.toLabelAnnotation(): List<LabelAnnotation> {
 @Controller
 class WebApp(private val airDraw: AirDraw, private val bus: Bus) {
 
-    @View("index")
     @Get("/")
     fun index(): HttpResponse<String> {
-        return HttpResponse.ok("")
+        val html = createHTMLDocument().html {
+            head {
+                title("Air Draw")
+                link("assets/index.css", "stylesheet")
+                script(ScriptType.textJavaScript) {
+                    src = "http://localhost:8081/web.js"
+                }
+            }
+
+            body {
+                +"waiting for drawings..."
+            }
+        }
+
+        val body = html.serialize(true)
+        return HttpResponse.ok(body).contentType(MediaType.TEXT_HTML)
     }
 
     @Post("/draw")

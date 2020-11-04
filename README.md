@@ -4,14 +4,14 @@
 
 ## Local Dev
 
-Run the web asset ser:
-```
-./gradlew -t :web:run
-```
-
 Run the web server:
 ```
 ./gradlew -t :server:run
+```
+
+Run the web asset server:
+```
+./gradlew -t :web:run
 ```
 
 Visit: [http://localhost:8080](http://localhost:8080)

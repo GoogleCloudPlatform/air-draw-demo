@@ -18,7 +18,6 @@ dependencies {
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime:2.1.1")
     implementation("io.micronaut:micronaut-runtime:2.1.2")
     implementation("io.micronaut:micronaut-http-server-netty:2.1.2")
-    implementation("io.micronaut.views:micronaut-views-thymeleaf:2.0.1")
 
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.3")
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
@@ -27,6 +26,8 @@ dependencies {
     implementation("com.google.cloud:google-cloud-pubsub:1.108.7")
     implementation("com.google.cloud:google-cloud-core:1.93.10")
     implementation("io.netty:netty-tcnative-boringssl-static:2.0.20.Final")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
 
     kapt("io.micronaut:micronaut-inject-java:2.1.2")
 }
