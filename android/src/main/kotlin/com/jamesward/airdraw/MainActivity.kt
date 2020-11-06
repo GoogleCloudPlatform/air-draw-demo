@@ -22,20 +22,30 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.view.View
-import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
-import com.jamesward.airdraw.data.ImageResult
+import androidx.compose.foundation.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.onActive
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.setContent
+import androidx.compose.ui.unit.dp
 import com.jamesward.airdraw.data.Orientation
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
-import io.reactivex.Single
+import kotlinx.coroutines.*
 import javax.inject.Inject
 
-class MainActivity: AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     var drawService: DrawService? = null
@@ -44,6 +54,12 @@ class MainActivity: AppCompatActivity() {
     var drawUrl: String? = null
 
     private var orientationSensorMaybe: OrientationSensor? = null
+
+    @Client("\${drawurl}")
+    interface DrawService {
+        @Post("/draw")
+        suspend fun draw(@Body readings: List<Orientation>): HttpResponse<Unit>
+    }
 
     class OrientationSensor: SensorEventListener {
         val readings: MutableList<Orientation> = ArrayList()
@@ -79,16 +95,7 @@ class MainActivity: AppCompatActivity() {
         getSystemService(Context.SENSOR_SERVICE) as SensorManager
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        println("drawurl = ${drawUrl}")
-    }
-
-    fun drawClick(view: View) {
-        val on = (view as ToggleButton).isChecked
-
+    suspend fun drawClick(on: Boolean) {
         if (on) {
             orientationSensorMaybe = OrientationSensor()
 
@@ -102,20 +109,50 @@ class MainActivity: AppCompatActivity() {
             orientationSensorMaybe?.let { orientationSensor ->
                 sensorManager.unregisterListener(orientationSensorMaybe)
 
-                drawService?.draw(orientationSensor.readings)?.blockingGet()
+                val status = drawService?.draw(orientationSensor.readings)?.status()
+                println("Server Response: $status")
 
                 orientationSensorMaybe = null
             }
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        println("drawurl = $drawUrl")
+
+        setContent {
+            Surface(color = MaterialTheme.colors.background) {
+                Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                    ToggleButton(::drawClick)
+                }
+            }
+        }
+    }
 }
 
-@Client("\${drawurl}")
-interface DrawService {
-    @Post("/show")
-    fun show(@Body imageResult: ImageResult): Single<Unit>
+@Composable
+fun ToggleButton(onChange: suspend (Boolean) -> Unit) {
+    val scope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate) }
 
-    @Post("/draw")
-    fun draw(@Body readings: List<Orientation>): Single<HttpResponse<Unit>>
+    onActive { onDispose { scope.cancel() } }
+
+    val on = remember { mutableStateOf(false) }
+
+    @Composable
+    fun color() = if (on.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+
+    @Composable
+    fun text() = if (on.value) "Stop Drawing" else "Start Drawing"
+
+    Button(onClick = {
+        on.value = !on.value
+
+        scope.launch {
+            onChange(on.value)
+        }
+    }, modifier = Modifier.fillMaxWidth(0.75f).height(128.dp), backgroundColor = color()) {
+        Text(text())
+    }
 }

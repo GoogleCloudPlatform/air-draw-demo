@@ -5,11 +5,18 @@ plugins {
     kotlin("kapt")
 }
 
+val composeVersion = "1.0.0-alpha03"
+
 dependencies {
     implementation(kotlin("reflect"))
     implementation(project(":common"))
     implementation("androidx.appcompat:appcompat:1.2.0")
+    implementation("androidx.compose.foundation:foundation-layout:$composeVersion")
+    implementation("androidx.compose.material:material:$composeVersion")
+    implementation("androidx.compose.runtime:runtime:$composeVersion")
+    implementation("androidx.compose.ui:ui:$composeVersion")
 
+    implementation("io.micronaut.kotlin:micronaut-kotlin-runtime:2.1.1")
     implementation("io.micronaut:micronaut-http-client:2.1.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.3")
     implementation("uk.uuid.slf4j:slf4j-android:1.7.28-0")
@@ -47,6 +54,7 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+        useIR = true
     }
 
     packagingOptions {
@@ -59,5 +67,21 @@ android {
 
     lintOptions {
         isAbortOnError = false
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerVersion = org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION.toString()
+        kotlinCompilerExtensionVersion = composeVersion
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        freeCompilerArgs = listOf("-Xallow-jvm-ir-dependencies", "-Xskip-prerelease-check")
     }
 }

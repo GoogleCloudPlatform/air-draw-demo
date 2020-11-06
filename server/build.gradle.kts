@@ -70,6 +70,10 @@ tasks.withType<JavaExec> {
     }
 }
 
+jib {
+    container.mainClass = "com.jamesward.airdraw.WebAppKt"
+}
+
 /*
 tasks {
     classes {
